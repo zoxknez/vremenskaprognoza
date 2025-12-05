@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { GlassCard } from '@/components/ui/glass-card';
-import { MeshGradientBackground } from '@/components/ui/backgrounds';
+import Link from 'next/link';
+import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
 export default function Error({
   error,
@@ -17,58 +16,35 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center p-4">
-      <MeshGradientBackground />
-      
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
-        className="relative z-10 w-full max-w-md"
-      >
-        <GlassCard className="text-center p-8">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", bounce: 0.5 }}
-            className="text-8xl mb-6"
+    <div className="min-h-screen bg-[#0a0e17] flex items-center justify-center p-4">
+      <div className="text-center max-w-md">
+        <div className="w-20 h-20 mx-auto rounded-full bg-red-500/20 flex items-center justify-center mb-6">
+          <AlertTriangle className="text-red-500" size={40} />
+        </div>
+        
+        <h1 className="text-3xl font-display font-bold text-white mb-4">
+          Ups! Nešto je pošlo po zlu
+        </h1>
+        
+        <p className="text-slate-400 mb-8">
+          {error.message || 'Došlo je do neočekivane greške. Molimo pokušajte ponovo.'}
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <button
+            onClick={reset}
+            className="btn-primary"
           >
-            😵
-          </motion.div>
+            <RefreshCw size={18} />
+            Pokušaj ponovo
+          </button>
           
-          <h2 className="text-2xl font-bold mb-2">Ups! Nešto je pošlo po zlu</h2>
-          
-          <p className="text-muted-foreground mb-6">
-            {error.message || 'Došlo je do neočekivane greške. Pokušajte ponovo.'}
-          </p>
-
-          <div className="flex gap-4 justify-center">
-            <motion.button
-              onClick={reset}
-              className="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-blue-500 to-purple-500 text-white"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Pokušaj ponovo
-            </motion.button>
-            
-            <motion.button
-              onClick={() => window.location.href = '/'}
-              className="px-6 py-3 rounded-xl font-semibold border border-border hover:bg-muted/50 transition-colors"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Početna
-            </motion.button>
-          </div>
-
-          {error.digest && (
-            <p className="mt-6 text-xs text-muted-foreground">
-              Error ID: {error.digest}
-            </p>
-          )}
-        </GlassCard>
-      </motion.div>
+          <Link href="/" className="btn-secondary">
+            <Home size={18} />
+            Početna stranica
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
