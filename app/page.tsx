@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, MapPin, Locate, Clock, ChevronRight } from "lucide-react";
@@ -15,6 +17,7 @@ export default function HomePage() {
   const [forecast, setForecast] = useState<ForecastData[]>([]);
   const [otherCities, setOtherCities] = useState<CityData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingOtherCities, setLoadingOtherCities] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<typeof POPULAR_CITIES>([]);
   const [showResults, setShowResults] = useState(false);
@@ -48,6 +51,7 @@ export default function HomePage() {
 
   const fetchWeatherData = async (city: { name: string; lat: number; lon: number; country: string }) => {
     setLoading(true);
+    setLoadingOtherCities(true);
     try {
       // 1. Fetch Current Weather
       const weatherRes = await fetch(
@@ -105,6 +109,7 @@ export default function HomePage() {
 
       const otherCitiesResults = await Promise.all(otherCitiesPromises);
       setOtherCities(otherCitiesResults.filter((c): c is CityData => c !== null));
+      setLoadingOtherCities(false);
 
     } catch (error) {
       console.error("Error fetching weather data:", error);
@@ -137,8 +142,8 @@ export default function HomePage() {
     setShowResults(false);
   };
 
-  const handleManualSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleManualSearch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!searchQuery) return;
 
     // Check if it's a known city
@@ -154,11 +159,13 @@ export default function HomePage() {
       const res = await fetch(`/api/weather?city=${encodeURIComponent(searchQuery)}`);
       if (res.ok) {
         const data = await res.json();
-        // Note: The API response might need to include lat/lon/country if we want to set it as selectedCity correctly
-        // For now, let's assume the API returns enough info or we refetch.
-        // Actually, the current API returns weather data directly. 
-        // We should ideally get the coordinates to set `selectedCity`.
+        // Since the API returns weather data, we can try to extract coords if available, 
+        // or just rely on the fact that we found it.
+        // However, our app relies on `selectedCity` having lat/lon.
+        // Let's assume for now we can't easily switch to an arbitrary city without lat/lon in this architecture
+        // without a proper geocoding response.
         console.log("Manual search for unknown city not fully implemented with forecast yet. Stick to the list or 'Locate Me'.");
+        alert("Za sada pretraga radi samo za gradove iz liste ili vašu lokaciju. Pokušajte 'Locate Me'.");
       }
     } catch (e) {
       console.error(e);
@@ -194,14 +201,168 @@ export default function HomePage() {
     } else {
       alert("Vaš pretraživač ne podržava geolokaciju.");
     }
-    setSelectedCity(city);
-  } else {
-    console.log("Selected city without coords:", city);
-}
-            }
-          }}
-        />
-      </div >
-    </div >
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-24 pb-12">
+      <div className="container mx-auto px-4 max-w-7xl">
+        {/* Hero Section */}
+        <div className="flex flex-col items-center justify-center py-16 md:py-24 text-center space-y-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="space-y-4 max-w-3xl"
+          >
+            <h1 className="text-5xl md:text-7xl font-display font-bold text-white tracking-tight">
+              Vremenska <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-accent-cyan">Prognoza</span>
+            </h1>
+            <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
+              Precizna vremenska prognoza, kvalitet vazduha i detaljni podaci za gradove širom Balkana i sveta.
+            </p>
+          </motion.div>
+
+          {/* Search Bar */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+            className="w-full max-w-2xl relative z-20"
+          >
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-primary-500 to-accent-cyan rounded-2xl opacity-20 group-hover:opacity-40 blur transition duration-500" />
+              <div className="relative flex items-center bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl">
+                <Search className="absolute left-4 w-6 h-6 text-slate-400 group-focus-within:text-primary-400 transition-colors" />
+                <input
+                  type="text"
+                  placeholder="Pretražite grad..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleManualSearch()}
+                  className="w-full pl-14 pr-14 py-4 bg-transparent text-white placeholder:text-slate-500 focus:outline-none text-lg rounded-2xl"
+                />
+                {loading && (
+                  <div className="absolute right-4">
+                    <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+                {!loading && (
+                  <button
+                    onClick={handleLocate}
+                    className="absolute right-3 p-2 text-slate-400 hover:text-primary-400 hover:bg-primary-500/10 rounded-xl transition-all"
+                    title="Locate Me"
+                  >
+                    <Locate className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Search Results Dropdown */}
+              <AnimatePresence>
+                {showResults && (searchResults.length > 0 || searchQuery.length > 0) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute top-full left-0 right-0 mt-4 bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-[400px] overflow-y-auto custom-scrollbar"
+                  >
+                    {searchResults.length > 0 ? (
+                      <div className="p-2 space-y-1">
+                        {searchResults.map((city) => (
+                          <button
+                            key={`${city.name}-${city.country}`}
+                            onClick={() => handleSearchSelect(city)}
+                            className="w-full flex items-center justify-between p-3 hover:bg-white/5 rounded-xl transition-colors group/item text-left"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-slate-800 rounded-lg text-slate-400 group-hover/item:text-primary-400 group-hover/item:bg-primary-500/10 transition-colors">
+                                <MapPin className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <p className="text-white font-medium">{city.name}</p>
+                                <p className="text-sm text-slate-400">{city.country}</p>
+                              </div>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-slate-600 group-hover/item:text-primary-400 transition-colors opacity-0 group-hover/item:opacity-100" />
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-8 text-center text-slate-400">
+                        <p>Nema rezultata za "{searchQuery}"</p>
+                        <button
+                          onClick={() => handleManualSearch()}
+                          className="mt-4 px-6 py-2 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 rounded-xl transition-colors text-sm font-medium"
+                        >
+                          Pretraži globalno
+                        </button>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Main Content Grid */}
+        {weather && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-20">
+            <WeatherCard
+              data={weather}
+              loading={loading}
+              onRefresh={() => fetchWeatherData(selectedCity)}
+              currentTime={currentTime}
+              currentDate={currentDate}
+              isFavorite={isFavorite(selectedCity.name)}
+              onToggleFavorite={() => toggleFavorite({
+                name: selectedCity.name,
+                country: selectedCity.country,
+                lat: selectedCity.lat,
+                lon: selectedCity.lon
+              })}
+            />
+
+            <div className="space-y-8">
+              <AirQualityCard data={weather} />
+              {forecast.length > 0 && (
+                <HourlyForecast forecast={forecast} />
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Other Cities Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="pb-20"
+        >
+          <div className="flex items-center gap-4 mb-8">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
+            <h2 className="text-2xl font-display font-bold text-white">Ostali Gradovi</h2>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
+          </div>
+          <CityList
+            cities={otherCities}
+            onSelect={(city: any) => {
+              const popularCity = POPULAR_CITIES.find(c => c.name === city.name);
+              if (popularCity) {
+                setSelectedCity(popularCity);
+              } else {
+                if (city.lat && city.lon) {
+                  setSelectedCity(city);
+                } else {
+                  console.log("Selected city without coords:", city);
+                }
+              }
+            }}
+          />
+        </motion.div>
+      </div>
+    </div>
   );
 }
