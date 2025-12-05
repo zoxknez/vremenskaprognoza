@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { Navigation } from "@/components/layout/Navigation";
+import { Footer } from "@/components/layout/Footer";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -48,8 +50,12 @@ export default function RootLayout({
         <div className="fixed inset-0 grid-pattern pointer-events-none" aria-hidden="true" />
         
         {/* Main content */}
-        <div className="relative min-h-screen">
-          {children}
+        <div className="relative min-h-screen flex flex-col">
+          <Navigation />
+          <main className="flex-1">
+            {children}
+          </main>
+          <Footer />
         </div>
       </body>
     </html>

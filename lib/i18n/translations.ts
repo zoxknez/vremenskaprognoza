@@ -7,11 +7,11 @@ export const SUPPORTED_LOCALES: Record<Locale, { name: string; nativeName: strin
   en: { name: 'English', nativeName: 'English', flag: '🇬🇧' },
   hr: { name: 'Croatian', nativeName: 'Hrvatski', flag: '🇭🇷' },
   bs: { name: 'Bosnian', nativeName: 'Bosanski', flag: '🇧🇦' },
-  mk: { name: 'Macedonian', nativeName: 'Македонски', flag: '🇲🇰' },
-  sl: { name: 'Slovenian', nativeName: 'Slovenščina', flag: '🇸🇮' },
-  bg: { name: 'Bulgarian', nativeName: 'Български', flag: '🇧🇬' },
-  ro: { name: 'Romanian', nativeName: 'Română', flag: '🇷🇴' },
-  el: { name: 'Greek', nativeName: 'Ελληνικά', flag: '🇬🇷' },
+  mk: { name: 'Macedonian', nativeName: 'Makedonski', flag: '🇲🇰' },
+  sl: { name: 'Slovenian', nativeName: 'Slovenscina', flag: '🇸🇮' },
+  bg: { name: 'Bulgarian', nativeName: 'Bulgarski', flag: '🇧🇬' },
+  ro: { name: 'Romanian', nativeName: 'Romana', flag: '🇷🇴' },
+  el: { name: 'Greek', nativeName: 'Ellinika', flag: '🇬🇷' },
   sq: { name: 'Albanian', nativeName: 'Shqip', flag: '🇦🇱' },
 };
 
@@ -267,11 +267,11 @@ export const translations: Record<Locale, Record<string, string>> = {
     // ... ostali prijevodi
   },
   mk: {
-    'nav.home': 'Почетна',
-    'nav.dashboard': 'Контролна табла',
-    'dashboard.title': 'Квалитет на воздухот на Балканот',
-    'aqi.good': 'Добар',
-    'aqi.moderate': 'Умерен',
+    'nav.home': 'Pocetna',
+    'nav.dashboard': 'Kontrolna tabla',
+    'dashboard.title': 'Kvalitet na vozduhot na Balkanot',
+    'aqi.good': 'Dobar',
+    'aqi.moderate': 'Umeren',
     // ... ostali prijevodi
   },
   sl: {
@@ -283,11 +283,11 @@ export const translations: Record<Locale, Record<string, string>> = {
     // ... ostali prijevodi
   },
   bg: {
-    'nav.home': 'Начало',
-    'nav.dashboard': 'Табло',
-    'dashboard.title': 'Качество на въздуха на Балканите',
-    'aqi.good': 'Добър',
-    'aqi.moderate': 'Умерен',
+    'nav.home': 'Nachalo',
+    'nav.dashboard': 'Tablo',
+    'dashboard.title': 'Kachestvo na vazduha na Balkanite',
+    'aqi.good': 'Dobar',
+    'aqi.moderate': 'Umeren',
     // ... ostali prijevodi
   },
   ro: {

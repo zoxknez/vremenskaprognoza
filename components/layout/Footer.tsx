@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Github, ExternalLink, Heart, Cloud } from 'lucide-react';
+import { Github, ExternalLink, Cloud } from 'lucide-react';
 
 export function Footer() {
   return (
@@ -18,7 +18,7 @@ export function Footer() {
 
           {/* Author */}
           <p className="flex items-center gap-2 text-slate-400 text-sm">
-            Napravio sa <Heart className="h-4 w-4 text-red-500 fill-red-500" />
+            Napravio
             <Link
               href="https://mojportfolio.vercel.app/"
               target="_blank"

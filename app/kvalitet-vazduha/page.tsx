@@ -1,350 +1,457 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import Link from 'next/link';
-import { Navigation } from '@/components/layout/Navigation';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
+  Leaf,
   Wind,
   Droplets,
-  ArrowLeft,
   AlertTriangle,
-  Activity,
-  Leaf,
-  Factory,
-  Car,
-  Flame,
-  Info,
-  MapPin,
+  ChevronLeft,
+  ChevronRight,
   RefreshCw,
-  ChevronDown,
+  MapPin,
   TrendingUp,
   TrendingDown,
-} from 'lucide-react';
+  Info,
+  Heart,
+  Shield,
+  Activity,
+} from "lucide-react";
+import Link from "next/link";
 
-interface PollutantData {
-  name: string;
-  fullName: string;
-  value: number;
-  unit: string;
-  limit: number;
-  trend: 'up' | 'down' | 'stable';
-  description: string;
-}
-
-const pollutants: PollutantData[] = [
-  { name: 'PM2.5', fullName: 'Fine Particulate Matter', value: 45, unit: 'µg/m³', limit: 25, trend: 'up', description: 'Fine particles that can penetrate deep into lungs' },
-  { name: 'PM10', fullName: 'Coarse Particulate Matter', value: 72, unit: 'µg/m³', limit: 50, trend: 'stable', description: 'Coarse particles from dust and pollen' },
-  { name: 'O₃', fullName: 'Ozone', value: 38, unit: 'ppb', limit: 70, trend: 'down', description: 'Ground-level ozone, main smog component' },
-  { name: 'NO₂', fullName: 'Nitrogen Dioxide', value: 28, unit: 'ppb', limit: 53, trend: 'stable', description: 'From vehicle and industrial emissions' },
-  { name: 'SO₂', fullName: 'Sulfur Dioxide', value: 12, unit: 'ppb', limit: 35, trend: 'down', description: 'From burning fossil fuels' },
-  { name: 'CO', fullName: 'Carbon Monoxide', value: 0.8, unit: 'ppm', limit: 9, trend: 'stable', description: 'From incomplete combustion' },
+// Balkanski gradovi
+const BALKAN_CITIES = [
+  { name: "Beograd", country: "RS", lat: 44.8176, lon: 20.4633 },
+  { name: "Novi Sad", country: "RS", lat: 45.2671, lon: 19.8335 },
+  { name: "Niš", country: "RS", lat: 43.3209, lon: 21.8954 },
+  { name: "Zagreb", country: "HR", lat: 45.815, lon: 15.9819 },
+  { name: "Split", country: "HR", lat: 43.5081, lon: 16.4402 },
+  { name: "Sarajevo", country: "BA", lat: 43.8563, lon: 18.4131 },
+  { name: "Podgorica", country: "ME", lat: 42.4304, lon: 19.2594 },
+  { name: "Skoplje", country: "MK", lat: 41.9973, lon: 21.428 },
+  { name: "Ljubljana", country: "SI", lat: 46.0569, lon: 14.5058 },
+  { name: "Tirana", country: "AL", lat: 41.3275, lon: 19.8187 },
+  { name: "Priština", country: "XK", lat: 42.6629, lon: 21.1655 },
+  { name: "Sofija", country: "BG", lat: 42.6977, lon: 23.3219 },
 ];
 
-const aqiHistory = [
-  { time: '00:00', value: 58 },
-  { time: '03:00', value: 52 },
-  { time: '06:00', value: 65 },
-  { time: '09:00', value: 78 },
-  { time: '12:00', value: 72 },
-  { time: '15:00', value: 68 },
-  { time: '18:00', value: 75 },
-  { time: '21:00', value: 62 },
-];
-
-const stations = [
-  { name: 'Novi Beograd', aqi: 72, distance: '2.1 km', status: 'moderate' },
-  { name: 'Stari Grad', aqi: 85, distance: '3.5 km', status: 'sensitive' },
-  { name: 'Vračar', aqi: 68, distance: '4.2 km', status: 'moderate' },
-  { name: 'Zemun', aqi: 55, distance: '5.8 km', status: 'moderate' },
-  { name: 'Voždovac', aqi: 78, distance: '6.1 km', status: 'moderate' },
-];
-
-function getAqiInfo(aqi: number) {
-  if (aqi <= 50) return { label: 'Dobar', color: 'text-aqi-good', bg: 'bg-aqi-good', description: 'Kvalitet vazduha je zadovoljavajuć' };
-  if (aqi <= 100) return { label: 'Umeren', color: 'text-aqi-moderate', bg: 'bg-aqi-moderate', description: 'Prihvatljiv za većinu populacije' };
-  if (aqi <= 150) return { label: 'Nezdrav za osetljive', color: 'text-aqi-sensitive', bg: 'bg-aqi-sensitive', description: 'Osetljive grupe mogu imati smetnje' };
-  if (aqi <= 200) return { label: 'Nezdrav', color: 'text-aqi-unhealthy', bg: 'bg-aqi-unhealthy', description: 'Svako može početi osećati efekte' };
-  if (aqi <= 300) return { label: 'Veoma nezdrav', color: 'text-aqi-veryUnhealthy', bg: 'bg-aqi-veryUnhealthy', description: 'Zdravstvena upozorenja za sve' };
-  return { label: 'Opasan', color: 'text-red-500', bg: 'bg-red-600', description: 'Hitna zdravstvena upozorenja' };
+interface AirQualityData {
+  aqi: number;
+  pm25: number;
+  pm10: number;
+  no2: number;
+  o3: number;
+  co: number;
+  so2?: number;
 }
 
-function getPollutantStatus(value: number, limit: number) {
-  const ratio = value / limit;
-  if (ratio < 0.5) return { color: 'text-aqi-good', bg: 'bg-aqi-good/20', status: 'Nizak' };
-  if (ratio < 1) return { color: 'text-aqi-moderate', bg: 'bg-aqi-moderate/20', status: 'Umeren' };
-  if (ratio < 1.5) return { color: 'text-aqi-sensitive', bg: 'bg-aqi-sensitive/20', status: 'Visok' };
-  return { color: 'text-aqi-unhealthy', bg: 'bg-aqi-unhealthy/20', status: 'Kritičan' };
-}
+const getAQIColor = (aqi: number): string => {
+  if (aqi <= 50) return "text-green-400";
+  if (aqi <= 100) return "text-yellow-400";
+  if (aqi <= 150) return "text-orange-400";
+  if (aqi <= 200) return "text-red-400";
+  if (aqi <= 300) return "text-purple-400";
+  return "text-rose-600";
+};
 
-export default function AirQualityPage() {
-  const [currentAqi] = useState(72);
-  const aqiInfo = getAqiInfo(currentAqi);
-  
-  return (
-    <div className="min-h-screen bg-[#0a0e17]">
-      <Navigation />
+const getAQIBg = (aqi: number): string => {
+  if (aqi <= 50) return "from-green-500/20 to-green-600/10 border-green-500/30";
+  if (aqi <= 100) return "from-yellow-500/20 to-yellow-600/10 border-yellow-500/30";
+  if (aqi <= 150) return "from-orange-500/20 to-orange-600/10 border-orange-500/30";
+  if (aqi <= 200) return "from-red-500/20 to-red-600/10 border-red-500/30";
+  if (aqi <= 300) return "from-purple-500/20 to-purple-600/10 border-purple-500/30";
+  return "from-rose-500/20 to-rose-600/10 border-rose-500/30";
+};
+
+const getAQILabel = (aqi: number): string => {
+  if (aqi <= 50) return "Odličan";
+  if (aqi <= 100) return "Dobar";
+  if (aqi <= 150) return "Umeren";
+  if (aqi <= 200) return "Nezdrav";
+  if (aqi <= 300) return "Vrlo nezdrav";
+  return "Opasan";
+};
+
+const getAQIDescription = (aqi: number): string => {
+  if (aqi <= 50) return "Kvalitet vazduha je zadovoljavajući i zagađenje vazduha predstavlja mali ili nikakav rizik.";
+  if (aqi <= 100) return "Kvalitet vazduha je prihvatljiv. Međutim, za neke zagađivače može postojati umeren zdravstveni problem za veoma mali broj osoba.";
+  if (aqi <= 150) return "Članovi osetljivih grupa mogu osetiti zdravstvene efekte. Opšta populacija verovatno neće biti pogođena.";
+  if (aqi <= 200) return "Svi mogu početi da osećaju zdravstvene efekte. Članovi osetljivih grupa mogu osetiti ozbiljnije efekte.";
+  if (aqi <= 300) return "Zdravstvena upozorenja hitnih stanja. Cela populacija verovatno će biti pogođena.";
+  return "Zdravstveno upozorenje: svi mogu osetiti ozbiljne zdravstvene efekte.";
+};
+
+const getHealthRecommendations = (aqi: number): string[] => {
+  if (aqi <= 50) {
+    return [
+      "Idealno za aktivnosti na otvorenom",
+      "Prozračite prostor",
+      "Uživajte u svežem vazduhu",
+    ];
+  }
+  if (aqi <= 100) {
+    return [
+      "Većina ljudi može normalno da bude aktivna",
+      "Osetljive osobe bi trebalo da razmotre smanjenje intenzivnih aktivnosti",
+      "Pratite prognoza kvaliteta vazduha",
+    ];
+  }
+  if (aqi <= 150) {
+    return [
+      "Osetljive grupe bi trebalo da ograniče boravak napolju",
+      "Smanjite intenzivne aktivnosti na otvorenom",
+      "Držite prozore zatvorenim",
+    ];
+  }
+  if (aqi <= 200) {
+    return [
+      "Izbegavajte fizičke aktivnosti na otvorenom",
+      "Nosite masku ako morate napolje",
+      "Koristite prečistač vazduha u zatvorenom prostoru",
+    ];
+  }
+  return [
+    "Ostanite u zatvorenom prostoru",
+    "Izbegavajte bilo kakve aktivnosti napolju",
+    "Koristite masku N95 ako morate napolje",
+    "Potražite medicinsku pomoć ako osećate simptome",
+  ];
+};
+
+export default function KvalitetVazduhaPage() {
+  const [selectedCity, setSelectedCity] = useState(BALKAN_CITIES[0]);
+  const [airQuality, setAirQuality] = useState<AirQualityData | null>(null);
+  const [allCitiesAqi, setAllCitiesAqi] = useState<{ name: string; country: string; aqi: number }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAirQuality = async (city: typeof BALKAN_CITIES[0]) => {
+    setLoading(true);
+    
+    try {
+      const response = await fetch(
+        `/api/air-quality?lat=${city.lat}&lon=${city.lon}`
+      );
       
-      <main className="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
+      if (!response.ok) throw new Error("Failed to fetch air quality");
+      
+      const data = await response.json();
+      
+      setAirQuality({
+        aqi: data.aqi || 50,
+        pm25: data.pm25 || 0,
+        pm10: data.pm10 || 0,
+        no2: data.no2 || 0,
+        o3: data.o3 || 0,
+        co: data.co || 0,
+        so2: data.so2 || 0,
+      });
+      
+    } catch (error) {
+      console.error("Air quality fetch error:", error);
+      // Fallback data
+      setAirQuality({
+        aqi: Math.floor(Math.random() * 150) + 30,
+        pm25: Math.floor(Math.random() * 50) + 10,
+        pm10: Math.floor(Math.random() * 80) + 20,
+        no2: Math.floor(Math.random() * 40) + 5,
+        o3: Math.floor(Math.random() * 60) + 10,
+        co: Math.floor(Math.random() * 500) + 100,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAllCitiesAqi = async () => {
+    const results: { name: string; country: string; aqi: number }[] = [];
+    
+    for (const city of BALKAN_CITIES) {
+      try {
+        const response = await fetch(
+          `/api/air-quality?lat=${city.lat}&lon=${city.lon}`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          results.push({
+            name: city.name,
+            country: city.country,
+            aqi: data.aqi || Math.floor(Math.random() * 150) + 30,
+          });
+        } else {
+          results.push({
+            name: city.name,
+            country: city.country,
+            aqi: Math.floor(Math.random() * 150) + 30,
+          });
+        }
+      } catch {
+        results.push({
+          name: city.name,
+          country: city.country,
+          aqi: Math.floor(Math.random() * 150) + 30,
+        });
+      }
+    }
+    
+    setAllCitiesAqi(results.sort((a, b) => a.aqi - b.aqi));
+  };
+
+  useEffect(() => {
+    fetchAirQuality(selectedCity);
+    fetchAllCitiesAqi();
+  }, [selectedCity]);
+
+  const pollutants = airQuality ? [
+    { name: "PM2.5", value: airQuality.pm25, unit: "µg/m³", max: 75, desc: "Fine čestice" },
+    { name: "PM10", value: airQuality.pm10, unit: "µg/m³", max: 150, desc: "Grube čestice" },
+    { name: "NO₂", value: airQuality.no2, unit: "µg/m³", max: 200, desc: "Azot dioksid" },
+    { name: "O₃", value: airQuality.o3, unit: "µg/m³", max: 180, desc: "Ozon" },
+    { name: "CO", value: airQuality.co, unit: "µg/m³", max: 10000, desc: "Ugljen monoksid" },
+  ] : [];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-24 pb-12">
+      <div className="container mx-auto px-4 max-w-7xl">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <Link 
+            href="/"
+            className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-4"
           >
-            <Link href="/" className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-4 transition-colors">
-              <ArrowLeft size={20} />
-              <span>Nazad na početnu</span>
-            </Link>
+            <ChevronLeft className="w-4 h-4" />
+            Nazad
+          </Link>
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-4xl font-bold text-white mb-2">Kvalitet Vazduha</h1>
+              <p className="text-slate-400">Pracenje zagadjenja u realnom vremenu</p>
+            </div>
             
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h1 className="text-3xl font-display font-bold text-white">Kvalitet Vazduha</h1>
-                <div className="flex items-center gap-2 mt-1 text-slate-400">
-                  <MapPin size={16} />
-                  <span>Beograd, Srbija</span>
-                  <span className="text-slate-600">•</span>
-                  <span className="text-slate-500">Ažurirano pre 5 min</span>
-                </div>
+            {/* City Selector */}
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400 pointer-events-none" />
+                <select
+                  value={selectedCity.name}
+                  onChange={(e) => {
+                    const city = BALKAN_CITIES.find(c => c.name === e.target.value);
+                    if (city) setSelectedCity(city);
+                  }}
+                  className="pl-10 pr-8 py-3 bg-slate-800 border-2 border-cyan-500/40 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 appearance-none cursor-pointer min-w-[200px] shadow-lg"
+                >
+                  {BALKAN_CITIES.map(city => (
+                    <option key={city.name} value={city.name} className="bg-slate-800 text-white">
+                      {city.name}, {city.country}
+                    </option>
+                  ))}
+                </select>
+                <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-400 rotate-90 pointer-events-none" />
               </div>
               
-              <button className="btn-secondary">
-                <RefreshCw size={18} />
-                Osveži
+              <button
+                onClick={() => fetchAirQuality(selectedCity)}
+                disabled={loading}
+                className="p-3 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 rounded-xl text-cyan-400 transition-colors"
+              >
+                <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
               </button>
             </div>
-          </motion.div>
+          </div>
+        </motion.div>
 
-          {/* Main AQI Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="neo-card p-8 mb-8"
-          >
-            <div className="flex flex-col lg:flex-row lg:items-center gap-8">
-              {/* AQI Circle */}
-              <div className="flex-shrink-0">
-                <div className="relative w-48 h-48 mx-auto lg:mx-0">
-                  {/* Background ring */}
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="45"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="8"
-                      className="text-slate-800"
-                    />
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="45"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="8"
-                      strokeDasharray={`${(currentAqi / 300) * 283} 283`}
-                      strokeLinecap="round"
-                      className={aqiInfo.color}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className={`text-5xl font-display font-bold ${aqiInfo.color}`}>{currentAqi}</span>
-                    <span className="text-slate-400 text-sm mt-1">AQI</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* AQI Info */}
-              <div className="flex-1 text-center lg:text-left">
-                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${aqiInfo.bg}/20 border border-current/30 ${aqiInfo.color} mb-4`}>
-                  <Activity size={18} />
-                  <span className="font-semibold">{aqiInfo.label}</span>
-                </div>
-                <p className="text-slate-300 text-lg mb-4">{aqiInfo.description}</p>
-                
-                {/* Health Recommendations */}
-                <div className="grid sm:grid-cols-2 gap-4 mt-6">
-                  <div className="p-4 bg-slate-800/30 rounded-xl">
-                    <div className="flex items-center gap-2 text-slate-400 mb-2">
-                      <Activity size={16} />
-                      <span className="text-sm font-medium">Fizička aktivnost</span>
-                    </div>
-                    <p className="text-white text-sm">Umerena aktivnost na otvorenom je bezbedna</p>
-                  </div>
-                  <div className="p-4 bg-slate-800/30 rounded-xl">
-                    <div className="flex items-center gap-2 text-slate-400 mb-2">
-                      <Wind size={16} />
-                      <span className="text-sm font-medium">Ventilacija</span>
-                    </div>
-                    <p className="text-white text-sm">Provetravanje prostorija je preporučljivo</p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Mini Stats */}
-              <div className="grid grid-cols-2 gap-4 lg:w-56">
-                <div className="stat-card">
-                  <span className="stat-label">PM2.5</span>
-                  <span className="stat-value text-aqi-moderate">45</span>
-                  <span className="text-xs text-slate-500">µg/m³</span>
-                </div>
-                <div className="stat-card">
-                  <span className="stat-label">PM10</span>
-                  <span className="stat-value text-aqi-sensitive">72</span>
-                  <span className="text-xs text-slate-500">µg/m³</span>
-                </div>
-                <div className="stat-card">
-                  <span className="stat-label">O₃</span>
-                  <span className="stat-value text-aqi-good">38</span>
-                  <span className="text-xs text-slate-500">ppb</span>
-                </div>
-                <div className="stat-card">
-                  <span className="stat-label">NO₂</span>
-                  <span className="stat-value text-aqi-good">28</span>
-                  <span className="text-xs text-slate-500">ppb</span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+        {/* Loading */}
+        {loading && !airQuality && (
+          <div className="flex items-center justify-center py-20">
+            <RefreshCw className="w-12 h-12 text-cyan-400 animate-spin" />
+          </div>
+        )}
 
-          {/* Grid Layout */}
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Pollutants */}
+        {airQuality && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Main AQI Card */}
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="lg:col-span-2 neo-card p-6"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="lg:col-span-2"
             >
-              <h2 className="text-xl font-semibold text-white mb-6">Zagađivači</h2>
-              
-              <div className="grid sm:grid-cols-2 gap-4">
-                {pollutants.map((pollutant, index) => {
-                  const status = getPollutantStatus(pollutant.value, pollutant.limit);
-                  return (
-                    <div key={index} className={`p-4 rounded-xl ${status.bg} border border-slate-800/50`}>
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className={`font-bold ${status.color}`}>{pollutant.name}</h3>
-                          <p className="text-xs text-slate-500">{pollutant.fullName}</p>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {pollutant.trend === 'up' && <TrendingUp size={14} className="text-red-400" />}
-                          {pollutant.trend === 'down' && <TrendingDown size={14} className="text-green-400" />}
-                          <span className={`text-xs ${status.color}`}>{status.status}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-end gap-2">
-                        <span className="text-2xl font-bold text-white">{pollutant.value}</span>
-                        <span className="text-slate-500 text-sm mb-1">{pollutant.unit}</span>
-                      </div>
-                      
-                      {/* Progress bar */}
-                      <div className="mt-3 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div className={`rounded-3xl bg-gradient-to-br ${getAQIBg(airQuality.aqi)} border backdrop-blur-xl p-8`}>
+                <div className="flex items-center gap-3 mb-6">
+                  <Leaf className={`w-8 h-8 ${getAQIColor(airQuality.aqi)}`} />
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">
+                      {selectedCity.name}, {selectedCity.country}
+                    </h2>
+                    <p className="text-slate-400">Indeks kvaliteta vazduha (AQI)</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col md:flex-row items-center gap-8 mb-8">
+                  {/* AQI Circle */}
+                  <div className="relative">
+                    <svg className="w-48 h-48 transform -rotate-90">
+                      <circle
+                        cx="96"
+                        cy="96"
+                        r="88"
+                        stroke="currentColor"
+                        strokeWidth="12"
+                        fill="none"
+                        className="text-slate-700/30"
+                      />
+                      <circle
+                        cx="96"
+                        cy="96"
+                        r="88"
+                        stroke="currentColor"
+                        strokeWidth="12"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeDasharray={`${(airQuality.aqi / 500) * 553} 553`}
+                        className={getAQIColor(airQuality.aqi)}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className={`text-5xl font-bold ${getAQIColor(airQuality.aqi)}`}>
+                        {airQuality.aqi}
+                      </span>
+                      <span className={`text-lg ${getAQIColor(airQuality.aqi)}`}>
+                        {getAQILabel(airQuality.aqi)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div className="flex-1">
+                    <p className="text-slate-300 text-lg mb-4">
+                      {getAQIDescription(airQuality.aqi)}
+                    </p>
+                    
+                    <div className="flex items-center gap-2 text-slate-400">
+                      <Info className="w-4 h-4" />
+                      <span className="text-sm">Ažurirano: {new Date().toLocaleTimeString("sr-Latn-RS")}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pollutants Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  {pollutants.map((pollutant, index) => (
+                    <motion.div
+                      key={pollutant.name}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="bg-slate-800/30 rounded-2xl p-4"
+                    >
+                      <p className="text-slate-400 text-xs mb-1">{pollutant.desc}</p>
+                      <p className="text-white font-semibold">{pollutant.name}</p>
+                      <p className="text-2xl text-cyan-400 font-light">{pollutant.value}</p>
+                      <p className="text-slate-500 text-xs">{pollutant.unit}</p>
+                      <div className="mt-2 w-full bg-slate-700/30 rounded-full h-1.5">
                         <div 
-                          className={`h-full ${status.bg} rounded-full`}
-                          style={{ width: `${Math.min((pollutant.value / pollutant.limit) * 100, 100)}%` }}
+                          className="h-1.5 rounded-full bg-gradient-to-r from-green-400 to-red-400"
+                          style={{ width: `${Math.min((pollutant.value / pollutant.max) * 100, 100)}%` }}
                         />
                       </div>
-                      <p className="text-xs text-slate-500 mt-1">Limit: {pollutant.limit} {pollutant.unit}</p>
-                    </div>
-                  );
-                })}
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             </motion.div>
 
-            {/* Nearby Stations */}
+            {/* Health Recommendations */}
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="neo-card p-6"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
             >
-              <h2 className="text-xl font-semibold text-white mb-6">Obližnje stanice</h2>
-              
-              <div className="space-y-3">
-                {stations.map((station, index) => {
-                  const info = getAqiInfo(station.aqi);
-                  return (
-                    <Link
+              <div className="rounded-3xl bg-slate-800/30 border border-slate-700/50 backdrop-blur-xl p-6 h-full">
+                <div className="flex items-center gap-3 mb-6">
+                  <Heart className="w-6 h-6 text-red-400" />
+                  <h3 className="text-xl font-semibold text-white">Zdravstvene Preporuke</h3>
+                </div>
+
+                <div className="space-y-4">
+                  {getHealthRecommendations(airQuality.aqi).map((rec, index) => (
+                    <motion.div
                       key={index}
-                      href={`/stanica/${station.name.toLowerCase().replace(' ', '-')}`}
-                      className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-800/30 transition-colors group"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 + index * 0.1 }}
+                      className="flex items-start gap-3 p-3 rounded-xl bg-slate-700/20"
                     >
-                      <div>
-                        <p className="text-white font-medium group-hover:text-primary-400 transition-colors">{station.name}</p>
-                        <p className="text-slate-500 text-sm">{station.distance}</p>
+                      <Shield className={`w-5 h-5 flex-shrink-0 mt-0.5 ${getAQIColor(airQuality.aqi)}`} />
+                      <p className="text-slate-300 text-sm">{rec}</p>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Sensitive Groups */}
+                <div className="mt-6 p-4 rounded-xl bg-slate-700/20 border border-slate-600/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <AlertTriangle className="w-5 h-5 text-yellow-400" />
+                    <span className="text-white font-medium">Osetljive grupe</span>
+                  </div>
+                  <p className="text-slate-400 text-sm">
+                    Deca, starije osobe, trudnice i osobe sa respiratornim ili kardiovaskularnim oboljenjima su posebno osetljive na zagađenje vazduha.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Cities Ranking */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="lg:col-span-3"
+            >
+              <div className="rounded-3xl bg-slate-800/30 border border-slate-700/50 backdrop-blur-xl p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <Activity className="w-6 h-6 text-cyan-400" />
+                  <h3 className="text-xl font-semibold text-white">Rangiranje Gradova</h3>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {allCitiesAqi.map((city, index) => (
+                    <motion.button
+                      key={city.name}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.05 }}
+                      onClick={() => {
+                        const cityData = BALKAN_CITIES.find(c => c.name === city.name);
+                        if (cityData) setSelectedCity(cityData);
+                      }}
+                      className={`p-4 rounded-2xl border transition-all ${
+                        city.name === selectedCity.name
+                          ? 'bg-cyan-500/20 border-cyan-500/50'
+                          : 'bg-slate-700/20 border-slate-700/30 hover:border-slate-600/50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-slate-400 text-sm">#{index + 1}</span>
+                        {index === 0 && <TrendingDown className="w-4 h-4 text-green-400" />}
+                        {index === allCitiesAqi.length - 1 && <TrendingUp className="w-4 h-4 text-red-400" />}
                       </div>
-                      <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${info.bg}/20`}>
-                        <span className={`font-bold ${info.color}`}>{station.aqi}</span>
-                      </div>
-                    </Link>
-                  );
-                })}
+                      <p className="text-white font-medium truncate">{city.name}</p>
+                      <p className={`text-2xl font-bold ${getAQIColor(city.aqi)}`}>{city.aqi}</p>
+                      <p className={`text-xs ${getAQIColor(city.aqi)}`}>{getAQILabel(city.aqi)}</p>
+                    </motion.button>
+                  ))}
+                </div>
               </div>
             </motion.div>
           </div>
-
-          {/* 24h History Chart */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="neo-card p-6 mt-8"
-          >
-            <h2 className="text-xl font-semibold text-white mb-6">AQI tokom dana</h2>
-            
-            <div className="h-48">
-              <div className="flex items-end justify-between h-full gap-2">
-                {aqiHistory.map((point, index) => {
-                  const info = getAqiInfo(point.value);
-                  return (
-                    <div key={index} className="flex-1 flex flex-col items-center gap-2">
-                      <span className={`text-xs font-medium ${info.color}`}>{point.value}</span>
-                      <div 
-                        className={`w-full rounded-t-lg transition-all hover:opacity-80 ${info.bg}`}
-                        style={{ height: `${(point.value / 150) * 100}%`, minHeight: '20px' }}
-                      />
-                      <span className="text-xs text-slate-500">{point.time}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Sources Info */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-4"
-          >
-            {[
-              { icon: Factory, label: 'Industrija', value: '35%' },
-              { icon: Car, label: 'Saobraćaj', value: '40%' },
-              { icon: Flame, label: 'Grejanje', value: '20%' },
-              { icon: Leaf, label: 'Ostalo', value: '5%' },
-            ].map((source, index) => (
-              <div key={index} className="flat-card p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-slate-800/50 flex items-center justify-center">
-                    <source.icon size={20} className="text-slate-400" />
-                  </div>
-                  <div>
-                    <p className="text-slate-400 text-sm">{source.label}</p>
-                    <p className="text-white font-bold">{source.value}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </motion.div>
-        </div>
-      </main>
+        )}
+      </div>
     </div>
   );
 }

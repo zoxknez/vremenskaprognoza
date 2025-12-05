@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Navigation } from '@/components/layout/Navigation';
 import {
   ArrowLeft,
   MapPin,
@@ -27,6 +26,7 @@ import {
   Share2,
   Star,
   Navigation2,
+  RefreshCw,
 } from 'lucide-react';
 
 // Mock data - in real app this would come from API
@@ -136,8 +136,6 @@ export default function CityPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0e17]">
-      <Navigation />
-      
       <main className="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
