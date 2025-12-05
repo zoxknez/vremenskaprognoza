@@ -1,6 +1,7 @@
 {
-  "name": "zagadjenost",
-  "version": "0.1.0",
+  "name": "vremenskaprognoza",
+  "version": "1.0.0",
+  "description": "Moderna aplikacija za vremensku prognozu i kvalitet vazduha na Balkanu",
   "private": true,
   "scripts": {
     "dev": "next dev",

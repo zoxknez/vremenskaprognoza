@@ -1,15 +1,29 @@
-# Zagadjenost vazduha na Balkanu
+# ☁️ Vremenska Prognoza - Balkan Weather & Air Quality
 
-Najsavremenija Next.js 16 web aplikacija za praćenje kvaliteta vazduha na Balkanu sa integracijom podataka iz više izvora.
+Moderna Next.js 16 web aplikacija za praćenje vremenske prognoze i kvaliteta vazduha na Balkanu sa real-time podacima iz više izvora.
+
+![Preview](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)
+![Tailwind](https://img.shields.io/badge/Tailwind-3.4-38bdf8?style=for-the-badge&logo=tailwindcss)
 
 ## ✨ Funkcionalnosti
 
-- 🗺️ Interaktivna mapa sa real-time podacima
-- 📊 Grafikoni za istorijske podatke
-- 🔔 Notifikacije za visoke nivoe zagadenja
-- 📱 Responsive dizajn za sve uređaje
-- 🌙 Dark mode podrška
-- ⚡ Brzo učitavanje sa Next.js 16 optimizacijama
+- 🌤️ **Vremenska prognoza** - 7-dnevna prognoza sa satnim podacima
+- 🗺️ **Interaktivna mapa** - Real-time vizualizacija sa heatmap slojem
+- 📊 **Kvalitet vazduha** - AQI indeks sa detaljnim zagađivačima (PM2.5, PM10, O₃, NO₂, SO₂, CO)
+- 🔔 **Smart upozorenja** - Push notifikacije za loš kvalitet vazduha
+- 📱 **PWA podrška** - Instaliraj kao mobilnu aplikaciju
+- 🌙 **Dark/Light tema** - Automatska detekcija sistemske teme
+- ⚡ **Glassmorphism UI** - Moderni dizajn sa animacijama
+- 🌍 **Multi-jezik** - Podrška za srpski, hrvatski, engleski
+
+## 🎨 UI Karakteristike
+
+- **Framer Motion animacije** - Smooth tranzicije i micro-interakcije
+- **Particle efekti** - Dinamična pozadina sa canvas animacijama
+- **AQI Gauge** - Animirani indikatori kvaliteta vazduha
+- **Glassmorphism kartice** - Staklasti efekti sa blur pozadinom
+- **Responsive dizajn** - Optimizovano za sve uređaje
 
 ## 🛠️ Tehnologije
 
@@ -24,19 +38,19 @@ Najsavremenija Next.js 16 web aplikacija za praćenje kvaliteta vazduha na Balka
 
 ## 📡 Izvori podataka
 
-Aplikacija integriše podatke iz **9 različitih izvora**:
+Aplikacija integriše podatke iz **9+ različitih izvora**:
 
-1. **OpenAQ API** - Globalna platforma za podatke o kvalitetu vazduha
-2. **Sensor Community** - Mreža građanskih senzora (Madavi.de)
-3. **WAQI (World Air Quality Index)** - Besplatni API sa 1000 zahteva/dan
-4. **OpenWeatherMap Air Pollution** - Besplatni tier sa 1000 zahteva/dan
-5. **AQICN API** - World Air Quality Index alternativni endpoint
-6. **AirVisual (IQAir)** - Besplatni tier sa 500 zahteva/mesec
-7. **AllThingsTalk Maker Platform** - IoT senzori
-8. **Agencija za zaštitu životne sredine Srbije (SEPA)** - Zvanični podaci
-9. **Klimerko (Vazduh građanima)** - Građanski monitoring
-
-Aplikacija automatski kombinuje podatke iz svih dostupnih izvora za najpreciznije rezultate.
+| Izvor | Tip | Besplatno |
+|-------|-----|-----------|
+| OpenWeatherMap | Vreme + AQI | ✅ 1000 req/dan |
+| WAQI | Kvalitet vazduha | ✅ 1000 req/dan |
+| OpenAQ | Globalni AQI | ✅ Neograničeno |
+| Sensor Community | Građanski senzori | ✅ Neograničeno |
+| AQICN | World AQI | ✅ Neograničeno |
+| AirVisual (IQAir) | Premium AQI | ✅ 500 req/mesec |
+| SEPA Srbija | Zvanični podaci | ✅ Besplatno |
+| Klimerko | Građanski monitoring | ✅ Besplatno |
+| AllThingsTalk | IoT senzori | ✅ Besplatno |
 
 ## 🚀 Pokretanje
 
@@ -58,39 +72,25 @@ Otvori [http://localhost:3000](http://localhost:3000) u browseru.
 Kreiraj `.env.local` fajl sa sledećim varijablama:
 
 ```env
-# Database (opciono - aplikacija radi i bez baze)
-DATABASE_URL=postgresql://user:password@host/database?sslmode=require
-
 # Mapbox (obavezno za mape)
-# Dobij token na: https://account.mapbox.com/access-tokens/
-NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=your_mapbox_token_here
+NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=your_mapbox_token
 
-# WAQI API (besplatno - 1000 zahteva/dan)
-# Registruj se na: https://aqicn.org/api/
-WAQI_API_TOKEN=your_waqi_token
-
-# OpenWeatherMap (besplatno - 1000 zahteva/dan)
-# Registruj se na: https://openweathermap.org/api
+# OpenWeatherMap (vreme + AQI)
 OPENWEATHER_API_KEY=your_openweather_key
 
-# AQICN API (besplatno)
+# WAQI API (kvalitet vazduha)
+WAQI_API_TOKEN=your_waqi_token
+
+# Opcioni API ključevi
 AQICN_API_TOKEN=your_aqicn_token
-
-# AirVisual/IQAir (besplatno - 500 zahteva/mesec)
-# Registruj se na: https://www.iqair.com/us/air-pollution-data-api
 AIRVISUAL_API_KEY=your_airvisual_key
+RESEND_API_KEY=your_resend_key
 
-# AllThingsTalk (opciono)
-ALLTHINGSTALK_TOKEN=your_allthingstalk_token
-
-# SEPA API (opciono - ako je dostupan)
-SEPA_API_BASE=https://www.sepa.gov.rs
-
-# Klimerko API (opciono - ako je dostupan)
-KLIMERKO_API_BASE=https://klimerko.rs
+# Database (opciono)
+DATABASE_URL=postgresql://user:password@host/database
 ```
 
-**Napomena:** Aplikacija će raditi i bez API ključeva - koristiće mock podatke za demonstraciju. Za najbolje rezultate, dodaj što više API ključeva.
+> **Napomena:** Aplikacija radi i bez API ključeva - koristi mock podatke za demo.
 
 ## 📦 Build za produkciju
 
@@ -101,38 +101,50 @@ npm start
 
 ## 🗄️ Database Setup (Opciono)
 
-Ako želiš da koristiš bazu podataka za čuvanje istorijskih podataka:
-
 ```bash
-# Generiši migracije
 npx drizzle-kit generate
-
-# Pokreni migracije
 npx drizzle-kit push
 ```
 
-## 🎨 Struktura projekta
+## 📂 Struktura projekta
 
 ```
-zagadjenost/
+vremenskaprognoza/
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/       # Dashboard layout
-│   │   ├── page.tsx       # Glavna stranica
-│   │   └── location/[id] # Detalji lokacije
-│   ├── api/               # API routes
-│   └── layout.tsx         # Root layout
+│   ├── page.tsx           # Početna stranica (Hero)
+│   ├── dashboard/         # Dashboard sa podacima
+│   ├── map/               # Interaktivna mapa
+│   ├── rankings/          # Rangiranje gradova
+│   ├── alerts/            # Upozorenja
+│   └── api/               # API routes
 ├── components/            # React komponente
-│   ├── ui/               # shadcn/ui komponente
-│   ├── map/              # Mapa komponente
-│   ├── charts/           # Grafičke komponente
-│   └── air-quality/     # Komponente za aplikaciju
+│   ├── ui/               # UI komponente (glass-card, aqi-gauge, animations)
+│   ├── home/             # Homepage sekcije
+│   ├── layout/           # Navigation, Footer
+│   └── dashboard/        # Dashboard komponente
 ├── lib/                  # Utility funkcije
-│   ├── api/              # API klijenti
-│   ├── db/               # Database schema
-│   └── types/            # TypeScript tipovi
+│   ├── api/              # API klijenti za sve izvore
+│   ├── types/            # TypeScript tipovi
+│   └── utils/            # Helper funkcije
 └── public/               # Statički fajlovi
 ```
 
+## 🖼️ Screenshots
+
+| Početna | Dashboard | Rangiranje |
+|---------|-----------|------------|
+| Hero sekcija sa live AQI | Tabovi i statistika | Best/Worst gradovi |
+
+## 🤝 Contributing
+
+Pull requests su dobrodošli! Za veće promene, prvo otvorite issue.
+
 ## 📄 Licenca
 
-MIT
+MIT © 2025
+
+---
+
+<p align="center">
+  Made with ❤️ for the Balkans
+</p>
