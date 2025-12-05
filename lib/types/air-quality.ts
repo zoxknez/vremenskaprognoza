@@ -1,4 +1,4 @@
-export type AirQualitySource = 'sepa' | 'openaq' | 'sensor-community' | 'klimerko' | 'allthingstalk' | 'waqi' | 'openweather' | 'aqicn' | 'airvisual';
+export type AirQualitySource = 'sepa' | 'openaq' | 'sensor-community' | 'allthingstalk' | 'waqi' | 'openweather' | 'aqicn' | 'airvisual';
 
 export type AQICategory = 'good' | 'moderate' | 'unhealthy' | 'very-unhealthy' | 'hazardous';
 

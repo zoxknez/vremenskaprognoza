@@ -60,12 +60,6 @@ Aplikacija integriše podatke iz **9 različitih izvora** za najpreciznije rezul
 - **Environment Variable**: `SEPA_API_BASE`
 - **Napomena**: Zvanični API endpoint još nije javno dostupan
 
-### 9. Klimerko (Vazduh građanima)
-- **URL**: https://klimerko.rs
-- **Status**: ⚠️ Endpoint treba da se istraži
-- **Environment Variable**: `KLIMERKO_API_BASE`
-- **Napomena**: API endpoint treba da se istraži
-
 ## Kako dodati API ključeve
 
 1. Otvori `.env.local` fajl u root direktorijumu

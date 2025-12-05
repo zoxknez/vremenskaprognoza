@@ -3,7 +3,6 @@ import { fetchOpenAQData } from './openaq';
 import { fetchSensorCommunityData } from './sensor-community';
 import { fetchAllThingsTalkData } from './allthingstalk';
 import { fetchSEPAData } from './sepa';
-import { fetchKlimerkoData } from './klimerko';
 import { fetchWAQIData } from './waqi';
 import { fetchOpenWeatherData } from './openweather';
 import { fetchAQICNData } from './aqicn';
@@ -16,7 +15,6 @@ export async function fetchAllAirQualityData(): Promise<AirQualityData[]> {
     sensorCommunityData,
     allThingsTalkData,
     sepaData,
-    klimerkoData,
     waqiData,
     openWeatherData,
     aqicnData,
@@ -26,7 +24,6 @@ export async function fetchAllAirQualityData(): Promise<AirQualityData[]> {
     fetchSensorCommunityData(),
     fetchAllThingsTalkData(process.env.ALLTHINGSTALK_TOKEN),
     fetchSEPAData(),
-    fetchKlimerkoData(),
     fetchWAQIData('Belgrade'),
     fetchOpenWeatherData(),
     fetchAQICNData(),
@@ -49,10 +46,6 @@ export async function fetchAllAirQualityData(): Promise<AirQualityData[]> {
 
   if (sepaData.status === 'fulfilled') {
     allData.push(...sepaData.value);
-  }
-
-  if (klimerkoData.status === 'fulfilled') {
-    allData.push(...klimerkoData.value);
   }
 
   if (waqiData.status === 'fulfilled') {

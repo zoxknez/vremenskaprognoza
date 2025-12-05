@@ -38,7 +38,7 @@ Moderna Next.js 16 web aplikacija za praćenje vremenske prognoze i kvaliteta va
 
 ## 📡 Izvori podataka
 
-Aplikacija integriše podatke iz **9+ različitih izvora**:
+Aplikacija integriše podatke iz **8+ različitih izvora**:
 
 | Izvor | Tip | Besplatno |
 |-------|-----|-----------|
@@ -49,7 +49,6 @@ Aplikacija integriše podatke iz **9+ različitih izvora**:
 | AQICN | World AQI | ✅ Neograničeno |
 | AirVisual (IQAir) | Premium AQI | ✅ 500 req/mesec |
 | SEPA Srbija | Zvanični podaci | ✅ Besplatno |
-| Klimerko | Građanski monitoring | ✅ Besplatno |
 | AllThingsTalk | IoT senzori | ✅ Besplatno |
 
 ## 🚀 Pokretanje
