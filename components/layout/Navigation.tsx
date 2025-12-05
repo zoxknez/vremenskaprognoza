@@ -37,16 +37,19 @@ export function Navigation() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50">
-        <nav className="bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="fixed top-4 left-0 right-0 z-50 px-4">
+        <nav className="max-w-7xl mx-auto bg-slate-950/70 backdrop-blur-2xl border border-slate-800/50 rounded-2xl shadow-2xl shadow-black/20">
+          <div className="px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               {/* Logo */}
-              <Link href="/" className="flex items-center gap-2 group">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-cyan flex items-center justify-center">
-                  <Sparkles className="text-white" size={20} />
+              <Link href="/" className="flex items-center gap-3 group">
+                <div className="relative w-10 h-10 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-accent-cyan rounded-xl opacity-80 group-hover:opacity-100 transition-opacity blur-sm" />
+                  <div className="relative w-full h-full rounded-xl bg-gradient-to-br from-primary-500 to-accent-cyan flex items-center justify-center border border-white/10">
+                    <Sparkles className="text-white" size={20} />
+                  </div>
                 </div>
-                <span className="font-display font-bold text-xl text-white hidden sm:block">
+                <span className="font-display font-bold text-xl text-white hidden sm:block tracking-tight">
                   VremenskaPrognoza
                 </span>
               </Link>
@@ -59,17 +62,17 @@ export function Navigation() {
                     <Link
                       key={link.href}
                       href={link.href}
-                      className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        isActive
-                          ? 'text-white bg-slate-800/50'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/30'
-                      }`}
+                      className={`relative px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${isActive
+                          ? 'text-white'
+                          : 'text-slate-400 hover:text-white hover:bg-white/5'
+                        }`}
                     >
                       {link.label}
                       {isActive && (
                         <motion.div
                           layoutId="nav-indicator"
-                          className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary-500 rounded-full"
+                          className="absolute inset-0 bg-white/10 rounded-xl border border-white/5"
+                          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                         />
                       )}
                     </Link>
@@ -78,19 +81,19 @@ export function Navigation() {
               </div>
 
               {/* Right Actions */}
-              <div className="flex items-center gap-2">
-                <button className="p-2 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors">
+              <div className="flex items-center gap-3">
+                <button className="p-2.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200">
                   <Search size={20} />
                 </button>
-                <button className="p-2 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors relative">
+                <button className="p-2.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200 relative group">
                   <Bell size={20} />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                  <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-slate-950 group-hover:scale-110 transition-transform" />
                 </button>
-                
+
                 {/* Mobile menu button */}
                 <button
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="md:hidden p-2 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors"
+                  className="md:hidden p-2.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200"
                 >
                   {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
                 </button>
@@ -117,11 +120,10 @@ export function Navigation() {
                       key={link.href}
                       href={link.href}
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-colors ${
-                        isActive
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-colors ${isActive
                           ? 'text-white bg-primary-600/20 border-l-2 border-primary-500'
                           : 'text-slate-400 hover:text-white hover:bg-slate-800/30'
-                      }`}
+                        }`}
                     >
                       <Icon size={20} />
                       {link.label}

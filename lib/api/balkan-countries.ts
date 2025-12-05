@@ -237,3 +237,11 @@ export function getCountryByCoordinates(lat: number, lon: number): BalkanCountry
   }
   return null;
 }
+
+// Flattened list of all cities for easy access
+export const POPULAR_CITIES = getAllBalkanCities().map(city => ({
+  name: city.name,
+  country: city.countryCode,
+  lat: city.lat,
+  lon: city.lon
+}));

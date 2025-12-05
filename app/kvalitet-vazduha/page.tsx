@@ -4,8 +4,6 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Leaf,
-  Wind,
-  Droplets,
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
@@ -19,59 +17,10 @@ import {
   Activity,
 } from "lucide-react";
 import Link from "next/link";
-
-// Balkanski gradovi
-const BALKAN_CITIES = [
-  { name: "Beograd", country: "RS", lat: 44.8176, lon: 20.4633 },
-  { name: "Novi Sad", country: "RS", lat: 45.2671, lon: 19.8335 },
-  { name: "Niš", country: "RS", lat: 43.3209, lon: 21.8954 },
-  { name: "Zagreb", country: "HR", lat: 45.815, lon: 15.9819 },
-  { name: "Split", country: "HR", lat: 43.5081, lon: 16.4402 },
-  { name: "Sarajevo", country: "BA", lat: 43.8563, lon: 18.4131 },
-  { name: "Podgorica", country: "ME", lat: 42.4304, lon: 19.2594 },
-  { name: "Skoplje", country: "MK", lat: 41.9973, lon: 21.428 },
-  { name: "Ljubljana", country: "SI", lat: 46.0569, lon: 14.5058 },
-  { name: "Tirana", country: "AL", lat: 41.3275, lon: 19.8187 },
-  { name: "Priština", country: "XK", lat: 42.6629, lon: 21.1655 },
-  { name: "Sofija", country: "BG", lat: 42.6977, lon: 23.3219 },
-];
-
-interface AirQualityData {
-  aqi: number;
-  pm25: number;
-  pm10: number;
-  no2: number;
-  o3: number;
-  co: number;
-  so2?: number;
-}
-
-const getAQIColor = (aqi: number): string => {
-  if (aqi <= 50) return "text-green-400";
-  if (aqi <= 100) return "text-yellow-400";
-  if (aqi <= 150) return "text-orange-400";
-  if (aqi <= 200) return "text-red-400";
-  if (aqi <= 300) return "text-purple-400";
-  return "text-rose-600";
-};
-
-const getAQIBg = (aqi: number): string => {
-  if (aqi <= 50) return "from-green-500/20 to-green-600/10 border-green-500/30";
-  if (aqi <= 100) return "from-yellow-500/20 to-yellow-600/10 border-yellow-500/30";
-  if (aqi <= 150) return "from-orange-500/20 to-orange-600/10 border-orange-500/30";
-  if (aqi <= 200) return "from-red-500/20 to-red-600/10 border-red-500/30";
-  if (aqi <= 300) return "from-purple-500/20 to-purple-600/10 border-purple-500/30";
-  return "from-rose-500/20 to-rose-600/10 border-rose-500/30";
-};
-
-const getAQILabel = (aqi: number): string => {
-  if (aqi <= 50) return "Odličan";
-  if (aqi <= 100) return "Dobar";
-  if (aqi <= 150) return "Umeren";
-  if (aqi <= 200) return "Nezdrav";
-  if (aqi <= 300) return "Vrlo nezdrav";
-  return "Opasan";
-};
+import { POPULAR_CITIES } from "@/lib/api/balkan-countries";
+import { AirQualityData } from "@/lib/types/weather";
+import { getAQIColor, getAQIBg, getAQILabel } from "@/components/weather/weather-utils";
+import { useFavorites } from "@/hooks/useFavorites";
 
 const getAQIDescription = (aqi: number): string => {
   if (aqi <= 50) return "Kvalitet vazduha je zadovoljavajući i zagađenje vazduha predstavlja mali ili nikakav rizik.";
@@ -120,23 +69,25 @@ const getHealthRecommendations = (aqi: number): string[] => {
 };
 
 export default function KvalitetVazduhaPage() {
-  const [selectedCity, setSelectedCity] = useState(BALKAN_CITIES[0]);
+  const [selectedCity, setSelectedCity] = useState(POPULAR_CITIES[0]);
   const [airQuality, setAirQuality] = useState<AirQualityData | null>(null);
   const [allCitiesAqi, setAllCitiesAqi] = useState<{ name: string; country: string; aqi: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchAirQuality = async (city: typeof BALKAN_CITIES[0]) => {
+  const { isFavorite, toggleFavorite } = useFavorites();
+
+  const fetchAirQuality = async (city: typeof POPULAR_CITIES[0]) => {
     setLoading(true);
-    
+
     try {
       const response = await fetch(
         `/api/air-quality?lat=${city.lat}&lon=${city.lon}`
       );
-      
+
       if (!response.ok) throw new Error("Failed to fetch air quality");
-      
+
       const data = await response.json();
-      
+
       setAirQuality({
         aqi: data.aqi || 50,
         pm25: data.pm25 || 0,
@@ -146,7 +97,7 @@ export default function KvalitetVazduhaPage() {
         co: data.co || 0,
         so2: data.so2 || 0,
       });
-      
+
     } catch (error) {
       console.error("Air quality fetch error:", error);
       // Fallback data
@@ -165,37 +116,36 @@ export default function KvalitetVazduhaPage() {
 
   const fetchAllCitiesAqi = async () => {
     const results: { name: string; country: string; aqi: number }[] = [];
-    
-    for (const city of BALKAN_CITIES) {
+
+    // Use a subset of popular cities to avoid too many requests
+    const citiesToFetch = POPULAR_CITIES.sort(() => Math.random() - 0.5).slice(0, 12);
+
+    const promises = citiesToFetch.map(async (city) => {
       try {
         const response = await fetch(
           `/api/air-quality?lat=${city.lat}&lon=${city.lon}`
         );
-        
+
         if (response.ok) {
           const data = await response.json();
-          results.push({
+          return {
             name: city.name,
             country: city.country,
             aqi: data.aqi || Math.floor(Math.random() * 150) + 30,
-          });
-        } else {
-          results.push({
-            name: city.name,
-            country: city.country,
-            aqi: Math.floor(Math.random() * 150) + 30,
-          });
+          };
         }
       } catch {
-        results.push({
-          name: city.name,
-          country: city.country,
-          aqi: Math.floor(Math.random() * 150) + 30,
-        });
+        // Ignore errors
       }
-    }
-    
-    setAllCitiesAqi(results.sort((a, b) => a.aqi - b.aqi));
+      return {
+        name: city.name,
+        country: city.country,
+        aqi: Math.floor(Math.random() * 150) + 30,
+      };
+    });
+
+    const fetchedResults = await Promise.all(promises);
+    setAllCitiesAqi(fetchedResults.sort((a, b) => a.aqi - b.aqi));
   };
 
   useEffect(() => {
@@ -215,56 +165,61 @@ export default function KvalitetVazduhaPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-24 pb-12">
       <div className="container mx-auto px-4 max-w-7xl">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <Link 
-            href="/"
-            className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-4"
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="space-y-2"
           >
-            <ChevronLeft className="w-4 h-4" />
-            Nazad
-          </Link>
-          
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-4xl font-bold text-white mb-2">Kvalitet Vazduha</h1>
-              <p className="text-slate-400">Pracenje zagadjenja u realnom vremenu</p>
-            </div>
-            
-            {/* City Selector */}
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400 pointer-events-none" />
-                <select
-                  value={selectedCity.name}
-                  onChange={(e) => {
-                    const city = BALKAN_CITIES.find(c => c.name === e.target.value);
-                    if (city) setSelectedCity(city);
-                  }}
-                  className="pl-10 pr-8 py-3 bg-slate-800 border-2 border-cyan-500/40 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 appearance-none cursor-pointer min-w-[200px] shadow-lg"
-                >
-                  {BALKAN_CITIES.map(city => (
-                    <option key={city.name} value={city.name} className="bg-slate-800 text-white">
-                      {city.name}, {city.country}
-                    </option>
-                  ))}
-                </select>
-                <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-400 rotate-90 pointer-events-none" />
-              </div>
-              
-              <button
-                onClick={() => fetchAirQuality(selectedCity)}
-                disabled={loading}
-                className="p-3 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 rounded-xl text-cyan-400 transition-colors"
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors mb-2 group"
+            >
+              <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              Nazad na početnu
+            </Link>
+            <h1 className="text-4xl font-bold text-white">
+              Kvalitet <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500">Vazduha</span>
+            </h1>
+            <p className="text-slate-400 max-w-lg">
+              Detaljna analiza zagađenja i zdravstvene preporuke u realnom vremenu.
+            </p>
+          </motion.div>
+
+          {/* City Selector */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-4 bg-slate-900/50 p-2 rounded-2xl border border-slate-800/50 backdrop-blur-xl"
+          >
+            <div className="relative">
+              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500 pointer-events-none" />
+              <select
+                value={selectedCity.name}
+                onChange={(e) => {
+                  const city = POPULAR_CITIES.find(c => c.name === e.target.value);
+                  if (city) setSelectedCity(city);
+                }}
+                className="pl-12 pr-10 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 appearance-none cursor-pointer min-w-[240px] transition-all hover:bg-slate-700/50"
               >
-                <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-              </button>
+                {POPULAR_CITIES.map(city => (
+                  <option key={city.name} value={city.name} className="bg-slate-900 text-white">
+                    {city.name}, {city.country}
+                  </option>
+                ))}
+              </select>
+              <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 rotate-90 pointer-events-none" />
             </div>
-          </div>
-        </motion.div>
+
+            <button
+              onClick={() => fetchAirQuality(selectedCity)}
+              disabled={loading}
+              className="p-3 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl text-emerald-400 transition-all active:scale-95"
+            >
+              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </motion.div>
+        </div>
 
         {/* Loading */}
         {loading && !airQuality && (
@@ -285,10 +240,26 @@ export default function KvalitetVazduhaPage() {
                 <div className="flex items-center gap-3 mb-6">
                   <Leaf className={`w-8 h-8 ${getAQIColor(airQuality.aqi)}`} />
                   <div>
-                    <h2 className="text-2xl font-bold text-white">
-                      {selectedCity.name}, {selectedCity.country}
-                    </h2>
-                    <p className="text-slate-400">Indeks kvaliteta vazduha (AQI)</p>
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-2xl font-bold text-white">
+                        {selectedCity.name}, {selectedCity.country}
+                      </h2>
+                      <button
+                        onClick={() => toggleFavorite({
+                          name: selectedCity.name,
+                          country: selectedCity.country,
+                          lat: selectedCity.lat,
+                          lon: selectedCity.lon
+                        })}
+                        className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                      >
+                        <Heart
+                          className={`w-6 h-6 transition-colors ${isFavorite(selectedCity.name) ? "fill-white text-white" : "text-white/70 hover:text-white"
+                            }`}
+                        />
+                      </button>
+                    </div>
+                    <p className="text-slate-200/80">Indeks kvaliteta vazduha (AQI)</p>
                   </div>
                 </div>
 
@@ -332,7 +303,7 @@ export default function KvalitetVazduhaPage() {
                     <p className="text-slate-300 text-lg mb-4">
                       {getAQIDescription(airQuality.aqi)}
                     </p>
-                    
+
                     <div className="flex items-center gap-2 text-slate-400">
                       <Info className="w-4 h-4" />
                       <span className="text-sm">Ažurirano: {new Date().toLocaleTimeString("sr-Latn-RS")}</span>
@@ -355,7 +326,7 @@ export default function KvalitetVazduhaPage() {
                       <p className="text-2xl text-cyan-400 font-light">{pollutant.value}</p>
                       <p className="text-slate-500 text-xs">{pollutant.unit}</p>
                       <div className="mt-2 w-full bg-slate-700/30 rounded-full h-1.5">
-                        <div 
+                        <div
                           className="h-1.5 rounded-full bg-gradient-to-r from-green-400 to-red-400"
                           style={{ width: `${Math.min((pollutant.value / pollutant.max) * 100, 100)}%` }}
                         />
@@ -427,14 +398,13 @@ export default function KvalitetVazduhaPage() {
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: index * 0.05 }}
                       onClick={() => {
-                        const cityData = BALKAN_CITIES.find(c => c.name === city.name);
+                        const cityData = POPULAR_CITIES.find(c => c.name === city.name);
                         if (cityData) setSelectedCity(cityData);
                       }}
-                      className={`p-4 rounded-2xl border transition-all ${
-                        city.name === selectedCity.name
-                          ? 'bg-cyan-500/20 border-cyan-500/50'
-                          : 'bg-slate-700/20 border-slate-700/30 hover:border-slate-600/50'
-                      }`}
+                      className={`p-4 rounded-2xl border transition-all ${city.name === selectedCity.name
+                        ? 'bg-cyan-500/20 border-cyan-500/50'
+                        : 'bg-slate-700/20 border-slate-700/30 hover:border-slate-600/50'
+                        }`}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-slate-400 text-sm">#{index + 1}</span>

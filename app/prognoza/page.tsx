@@ -25,21 +25,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-// Balkanski gradovi
-const BALKAN_CITIES = [
-  { name: "Beograd", country: "RS", lat: 44.8176, lon: 20.4633 },
-  { name: "Novi Sad", country: "RS", lat: 45.2671, lon: 19.8335 },
-  { name: "Niš", country: "RS", lat: 43.3209, lon: 21.8954 },
-  { name: "Zagreb", country: "HR", lat: 45.815, lon: 15.9819 },
-  { name: "Split", country: "HR", lat: 43.5081, lon: 16.4402 },
-  { name: "Sarajevo", country: "BA", lat: 43.8563, lon: 18.4131 },
-  { name: "Podgorica", country: "ME", lat: 42.4304, lon: 19.2594 },
-  { name: "Skoplje", country: "MK", lat: 41.9973, lon: 21.428 },
-  { name: "Ljubljana", country: "SI", lat: 46.0569, lon: 14.5058 },
-  { name: "Tirana", country: "AL", lat: 41.3275, lon: 19.8187 },
-  { name: "Priština", country: "XK", lat: 42.6629, lon: 21.1655 },
-  { name: "Sofija", country: "BG", lat: 42.6977, lon: 23.3219 },
-];
+import { POPULAR_CITIES } from "@/lib/api/balkan-countries";
 
 interface HourlyForecast {
   time: string;
@@ -69,7 +55,7 @@ interface DailyForecast {
 const getWeatherIcon = (description: string, size: number = 32) => {
   const desc = description.toLowerCase();
   const style = { width: size, height: size };
-  
+
   if (desc.includes("sun") || desc.includes("clear") || desc.includes("vedro") || desc.includes("jasno")) {
     return <Sun style={style} />;
   } else if (desc.includes("rain") || desc.includes("kiša")) {
@@ -86,40 +72,40 @@ const getWeatherIcon = (description: string, size: number = 32) => {
 };
 
 export default function ProgonzaPage() {
-  const [selectedCity, setSelectedCity] = useState(BALKAN_CITIES[0]);
+  const [selectedCity, setSelectedCity] = useState(POPULAR_CITIES[0]);
   const [hourlyForecast, setHourlyForecast] = useState<HourlyForecast[]>([]);
   const [dailyForecast, setDailyForecast] = useState<DailyForecast[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"hourly" | "daily">("hourly");
 
-  const fetchForecast = async (city: typeof BALKAN_CITIES[0]) => {
+  const fetchForecast = async (city: typeof POPULAR_CITIES[0]) => {
     setLoading(true);
-    
+
     try {
       // Fetch 5-day forecast from OpenWeather
       const response = await fetch(
         `/api/forecast?lat=${city.lat}&lon=${city.lon}`
       );
-      
+
       if (!response.ok) throw new Error("Failed to fetch forecast");
-      
+
       const data = await response.json();
-      
+
       if (data.hourly) {
         setHourlyForecast(data.hourly);
       }
-      
+
       if (data.daily) {
         setDailyForecast(data.daily);
       }
-      
+
     } catch (error) {
       console.error("Forecast fetch error:", error);
-      
+
       // Generate mock data if API fails
       const mockHourly: HourlyForecast[] = [];
       const baseTemp = 20;
-      
+
       for (let i = 0; i < 48; i++) {
         const time = new Date();
         time.setHours(time.getHours() + i);
@@ -135,10 +121,10 @@ export default function ProgonzaPage() {
         });
       }
       setHourlyForecast(mockHourly);
-      
+
       const mockDaily: DailyForecast[] = [];
       const days = ["Nedelja", "Ponedeljak", "Utorak", "Sreda", "Četvrtak", "Petak", "Subota"];
-      
+
       for (let i = 0; i < 7; i++) {
         const date = new Date();
         date.setDate(date.getDate() + i);
@@ -157,7 +143,7 @@ export default function ProgonzaPage() {
         });
       }
       setDailyForecast(mockDaily);
-      
+
     } finally {
       setLoading(false);
     }
@@ -176,20 +162,20 @@ export default function ProgonzaPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <Link 
+          <Link
             href="/"
             className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-4"
           >
             <ChevronLeft className="w-4 h-4" />
             Nazad
           </Link>
-          
+
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-4xl font-bold text-white mb-2">Vremenska Prognoza</h1>
               <p className="text-slate-400">Detaljna prognoza za narednih 7 dana</p>
             </div>
-            
+
             {/* City Selector */}
             <div className="flex items-center gap-4">
               <div className="relative">
@@ -197,12 +183,12 @@ export default function ProgonzaPage() {
                 <select
                   value={selectedCity.name}
                   onChange={(e) => {
-                    const city = BALKAN_CITIES.find(c => c.name === e.target.value);
+                    const city = POPULAR_CITIES.find(c => c.name === e.target.value);
                     if (city) setSelectedCity(city);
                   }}
                   className="pl-10 pr-8 py-3 bg-slate-800 border-2 border-cyan-500/40 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 appearance-none cursor-pointer min-w-[200px] shadow-lg"
                 >
-                  {BALKAN_CITIES.map(city => (
+                  {POPULAR_CITIES.map(city => (
                     <option key={city.name} value={city.name} className="bg-slate-800 text-white">
                       {city.name}, {city.country}
                     </option>
@@ -210,7 +196,7 @@ export default function ProgonzaPage() {
                 </select>
                 <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-400 rotate-90 pointer-events-none" />
               </div>
-              
+
               <button
                 onClick={() => fetchForecast(selectedCity)}
                 disabled={loading}
@@ -226,22 +212,20 @@ export default function ProgonzaPage() {
         <div className="flex gap-2 mb-6">
           <button
             onClick={() => setActiveTab("hourly")}
-            className={`px-6 py-3 rounded-xl font-medium transition-all ${
-              activeTab === "hourly"
+            className={`px-6 py-3 rounded-xl font-medium transition-all ${activeTab === "hourly"
                 ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
                 : "bg-slate-800/30 text-slate-400 border border-slate-700/30 hover:bg-slate-800/50"
-            }`}
+              }`}
           >
             <Clock className="w-4 h-4 inline mr-2" />
             Po Satima
           </button>
           <button
             onClick={() => setActiveTab("daily")}
-            className={`px-6 py-3 rounded-xl font-medium transition-all ${
-              activeTab === "daily"
+            className={`px-6 py-3 rounded-xl font-medium transition-all ${activeTab === "daily"
                 ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
                 : "bg-slate-800/30 text-slate-400 border border-slate-700/30 hover:bg-slate-800/50"
-            }`}
+              }`}
           >
             <Calendar className="w-4 h-4 inline mr-2" />
             Po Danima
@@ -267,18 +251,17 @@ export default function ProgonzaPage() {
                 {hourlyForecast.slice(0, 24).map((hour, index) => {
                   const time = new Date(hour.time);
                   const isNow = index === 0;
-                  
+
                   return (
                     <motion.div
                       key={index}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.03 }}
-                      className={`flex-shrink-0 w-24 p-4 rounded-2xl text-center transition-all ${
-                        isNow
+                      className={`flex-shrink-0 w-24 p-4 rounded-2xl text-center transition-all ${isNow
                           ? "bg-cyan-500/20 border-2 border-cyan-500/50"
                           : "bg-slate-700/20 hover:bg-slate-700/40 border border-slate-700/30"
-                      }`}
+                        }`}
                     >
                       <p className={`text-sm mb-2 ${isNow ? 'text-cyan-400 font-medium' : 'text-slate-400'}`}>
                         {isNow ? "Sada" : `${time.getHours().toString().padStart(2, '0')}:00`}
@@ -304,7 +287,7 @@ export default function ProgonzaPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {hourlyForecast.slice(0, 4).map((hour, index) => {
                 const time = new Date(hour.time);
-                
+
                 return (
                   <motion.div
                     key={index}
@@ -353,16 +336,15 @@ export default function ProgonzaPage() {
             {dailyForecast.map((day, index) => {
               const date = new Date(day.date);
               const isToday = index === 0;
-              
+
               return (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className={`rounded-2xl bg-slate-800/30 border backdrop-blur-xl p-6 ${
-                    isToday ? 'border-cyan-500/30' : 'border-slate-700/50'
-                  }`}
+                  className={`rounded-2xl bg-slate-800/30 border backdrop-blur-xl p-6 ${isToday ? 'border-cyan-500/30' : 'border-slate-700/50'
+                    }`}
                 >
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     {/* Day Info */}
@@ -375,9 +357,9 @@ export default function ProgonzaPage() {
                           {isToday ? "Danas" : day.dayName}
                         </h3>
                         <p className="text-slate-400 text-sm">
-                          {date.toLocaleDateString("sr-Latn-RS", { 
-                            day: "numeric", 
-                            month: "long" 
+                          {date.toLocaleDateString("sr-Latn-RS", {
+                            day: "numeric",
+                            month: "long"
                           })}
                         </p>
                         <p className="text-slate-500 text-sm capitalize">{day.description}</p>

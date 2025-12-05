@@ -19,6 +19,8 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
+import { POPULAR_CITIES } from '@/lib/api/balkan-countries';
+
 // Mapbox token from environment
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.eyJ1Ijoiem94a25leiIsImEiOiJjbWlzNWt0MDEwbGJnNWlzaXJ2ZDgzeDZnIn0.raQT7wvAQ6dyV4XR9WVzNg';
 
@@ -33,23 +35,13 @@ interface LocationData {
   windSpeed: number;
 }
 
-// Balkanski gradovi sa koordinatama
-const BALKAN_CITIES = [
-  { id: '1', name: 'Beograd', lat: 44.8176, lng: 20.4633 },
-  { id: '2', name: 'Novi Sad', lat: 45.2671, lng: 19.8335 },
-  { id: '3', name: 'Niš', lat: 43.3209, lng: 21.8958 },
-  { id: '4', name: 'Kragujevac', lat: 44.0128, lng: 20.9114 },
-  { id: '5', name: 'Subotica', lat: 46.1000, lng: 19.6667 },
-  { id: '6', name: 'Sarajevo', lat: 43.8563, lng: 18.4131 },
-  { id: '7', name: 'Zagreb', lat: 45.8150, lng: 15.9819 },
-  { id: '8', name: 'Podgorica', lat: 42.4304, lng: 19.2594 },
-  { id: '9', name: 'Skoplje', lat: 41.9981, lng: 21.4254 },
-  { id: '10', name: 'Priština', lat: 42.6629, lng: 21.1655 },
-  { id: '11', name: 'Ljubljana', lat: 46.0569, lng: 14.5058 },
-  { id: '12', name: 'Split', lat: 43.5081, lng: 16.4402 },
-  { id: '13', name: 'Tirana', lat: 41.3275, lng: 19.8187 },
-  { id: '14', name: 'Sofija', lat: 42.6977, lng: 23.3219 },
-];
+// Map popular cities to map format
+const MAP_CITIES = POPULAR_CITIES.map((city, index) => ({
+  id: String(index + 1),
+  name: city.name,
+  lat: city.lat,
+  lng: city.lon,
+}));
 
 type MapLayer = 'temperature' | 'aqi' | 'wind' | 'humidity';
 
@@ -73,7 +65,7 @@ export default function MapPage() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
-  
+
   const [locations, setLocations] = useState<LocationData[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(null);
   const [activeLayer, setActiveLayer] = useState<MapLayer>('temperature');
@@ -84,13 +76,13 @@ export default function MapPage() {
   const fetchAllCitiesData = async () => {
     setDataLoading(true);
     const results: LocationData[] = [];
-    
-    for (const city of BALKAN_CITIES) {
+
+    for (const city of MAP_CITIES) {
       try {
         const response = await fetch(
           `/api/weather?lat=${city.lat}&lon=${city.lng}&city=${encodeURIComponent(city.name)}`
         );
-        
+
         if (response.ok) {
           const data = await response.json();
           results.push({
@@ -129,7 +121,7 @@ export default function MapPage() {
         });
       }
     }
-    
+
     setLocations(results);
     setDataLoading(false);
   };
@@ -178,21 +170,21 @@ export default function MapPage() {
     locations.forEach((location) => {
       const el = document.createElement('div');
       el.className = 'map-marker';
-      
-      const color = activeLayer === 'aqi' 
+
+      const color = activeLayer === 'aqi'
         ? getAqiColor(location.aqi)
         : getTempColor(location.temp);
-      
-      const value = activeLayer === 'aqi' 
-        ? location.aqi 
+
+      const value = activeLayer === 'aqi'
+        ? location.aqi
         : activeLayer === 'humidity'
-        ? location.humidity
-        : activeLayer === 'wind'
-        ? location.windSpeed
-        : location.temp;
-      
+          ? location.humidity
+          : activeLayer === 'wind'
+            ? location.windSpeed
+            : location.temp;
+
       const unit = activeLayer === 'temperature' ? '°' : activeLayer === 'humidity' ? '%' : activeLayer === 'wind' ? '' : '';
-      
+
       el.innerHTML = `
         <div style="
           display: flex;
@@ -269,7 +261,7 @@ export default function MapPage() {
                 <p className="text-slate-400 text-sm">Vremenska prognoza i kvalitet vazduha</p>
               </div>
             </div>
-            
+
             {/* Layer Selector */}
             <div className="flex items-center gap-2 bg-slate-800/50 p-1 rounded-xl">
               {[
@@ -281,11 +273,10 @@ export default function MapPage() {
                 <button
                   key={layer.id}
                   onClick={() => setActiveLayer(layer.id as MapLayer)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    activeLayer === layer.id
-                      ? 'bg-primary-600 text-white'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeLayer === layer.id
+                    ? 'bg-primary-600 text-white'
+                    : 'text-slate-400 hover:text-white'
+                    }`}
                 >
                   <layer.icon size={16} />
                   <span className="hidden sm:inline">{layer.label}</span>
@@ -305,7 +296,7 @@ export default function MapPage() {
               </div>
             </div>
           )}
-          
+
           <div ref={mapContainer} className="absolute inset-0" />
 
           {/* Map Controls */}
@@ -341,7 +332,7 @@ export default function MapPage() {
                 {activeLayer === 'wind' && 'Vetar (km/h)'}
               </span>
             </div>
-            
+
             {activeLayer === 'temperature' && (
               <div className="flex items-center gap-1">
                 {['#60A5FA', '#22D3EE', '#34D399', '#FBBF24', '#F97316'].map((color, i) => (
@@ -349,7 +340,7 @@ export default function MapPage() {
                 ))}
               </div>
             )}
-            
+
             {activeLayer === 'aqi' && (
               <div className="flex items-center gap-1">
                 {['#22C55E', '#EAB308', '#F97316', '#EF4444', '#A855F7'].map((color, i) => (
@@ -357,7 +348,7 @@ export default function MapPage() {
                 ))}
               </div>
             )}
-            
+
             {(activeLayer === 'humidity' || activeLayer === 'wind') && (
               <div className="flex items-center gap-1">
                 {['#60A5FA', '#3B82F6', '#2563EB', '#1D4ED8', '#1E40AF'].map((color, i) => (
@@ -386,7 +377,7 @@ export default function MapPage() {
                   </button>
                 </div>
               </div>
-              
+
               <div className="p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-slate-400">
@@ -395,20 +386,20 @@ export default function MapPage() {
                   </div>
                   <span className="text-2xl font-bold text-white">{selectedLocation.temp}°C</span>
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-slate-400">
                     <Wind size={18} />
                     <span>AQI</span>
                   </div>
-                  <span 
+                  <span
                     className="text-xl font-bold"
                     style={{ color: getAqiColor(selectedLocation.aqi) }}
                   >
                     {selectedLocation.aqi}
                   </span>
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-slate-400">
                     <Droplets size={18} />
@@ -416,7 +407,7 @@ export default function MapPage() {
                   </div>
                   <span className="text-white font-medium">{selectedLocation.humidity}%</span>
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-slate-400">
                     <Cloud size={18} />
@@ -424,7 +415,7 @@ export default function MapPage() {
                   </div>
                   <span className="text-white font-medium">{selectedLocation.windSpeed} km/h</span>
                 </div>
-                
+
                 <Link
                   href={`/grad/${selectedLocation.name.toLowerCase()}`}
                   className="btn-primary w-full justify-center mt-4"
