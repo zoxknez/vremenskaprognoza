@@ -17,6 +17,8 @@ import {
   Search,
   Bell,
   Sparkles,
+  User,
+  Mail,
 } from 'lucide-react';
 
 const navLinks = [
@@ -25,6 +27,8 @@ const navLinks = [
   { href: '/kvalitet-vazduha', label: 'Kvalitet Vazduha', icon: Wind },
   { href: '/mapa', label: 'Mapa', icon: Map },
   { href: '/statistika', label: 'Statistika', icon: BarChart3 },
+  { href: '/o-autoru', label: 'O Autoru', icon: User },
+  { href: '/kontakt', label: 'Kontakt', icon: Mail },
 ];
 
 export function Navigation() {
