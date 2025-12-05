@@ -58,6 +58,8 @@ export default function MapboxComponent({
       if (token) {
         mapbox.default.accessToken = token;
       }
+      // Disable telemetry to avoid ERR_BLOCKED_BY_CLIENT errors from ad blockers
+      (mapbox.default as unknown as { config: { EVENTS_URL: string | null } }).config.EVENTS_URL = null;
       setMapboxgl(mapbox);
     });
   }, []);
