@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, MapPin, Locate, ChevronRight } from "lucide-react";
+import { Search, MapPin, Locate, ChevronRight, Globe } from "lucide-react";
 import { POPULAR_CITIES } from "@/lib/api/balkan-countries";
 import { WeatherData, ForecastData, CityData } from "@/lib/types/weather";
 import WeatherCard from "@/components/weather/WeatherCard";
@@ -11,16 +11,31 @@ import HourlyForecast from "@/components/weather/HourlyForecast";
 import CityList from "@/components/weather/CityList";
 import { useFavorites } from "@/hooks/useFavorites";
 
+// Type for geocoding results
+interface GeocodingCity {
+  name: string;
+  nameEn: string;
+  lat: number;
+  lon: number;
+  country: string;
+  state?: string;
+  displayName: string;
+}
+
+// Combined search result type
+type SearchResult = (typeof POPULAR_CITIES[0] & { isLocal?: boolean }) | (GeocodingCity & { isLocal?: boolean });
+
 export default function HomePage() {
-  const [selectedCity, setSelectedCity] = useState<typeof POPULAR_CITIES[0] | undefined>(POPULAR_CITIES[0]);
+  const [selectedCity, setSelectedCity] = useState<{ name: string; lat: number; lon: number; country: string } | undefined>(POPULAR_CITIES[0]);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [forecast, setForecast] = useState<ForecastData[]>([]);
   const [otherCities, setOtherCities] = useState<CityData[]>([]);
   const [loading, setLoading] = useState(true);
   const [, setLoadingOtherCities] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<typeof POPULAR_CITIES>([]);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
   const [currentDate, setCurrentDate] = useState("");
 
@@ -124,22 +139,71 @@ export default function HomePage() {
     }
   }, [selectedCity]);
 
-  // Search handler
-  useEffect(() => {
-    if (searchQuery.length > 1) {
-      const results = POPULAR_CITIES.filter((city) =>
-        city.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setSearchResults(results);
-      setShowResults(true);
-    } else {
+  // Search handler with debounce and geocoding
+  const searchCities = useCallback(async (query: string) => {
+    if (query.length < 2) {
       setSearchResults([]);
       setShowResults(false);
+      return;
     }
-  }, [searchQuery]);
 
-  const handleSearchSelect = async (city: typeof POPULAR_CITIES[0]) => {
-    setSelectedCity(city);
+    // First, search local popular cities
+    const localResults = POPULAR_CITIES.filter((city) =>
+      city.name.toLowerCase().includes(query.toLowerCase())
+    ).map(city => ({ ...city, isLocal: true }));
+
+    // Show local results immediately
+    setSearchResults(localResults);
+    setShowResults(true);
+
+    // If query is 3+ chars, also search via geocoding API for global results
+    if (query.length >= 3) {
+      setIsSearching(true);
+      try {
+        const response = await fetch(`/api/geocoding?q=${encodeURIComponent(query)}&limit=5`);
+        if (response.ok) {
+          const data = await response.json();
+          const globalResults: SearchResult[] = data.results.map((r: GeocodingCity) => ({
+            ...r,
+            isLocal: false,
+          }));
+
+          // Combine local and global, removing duplicates
+          const combined: SearchResult[] = [...localResults];
+          for (const global of globalResults) {
+            const isDuplicate = localResults.some(
+              local => Math.abs(local.lat - global.lat) < 0.1 && Math.abs(local.lon - global.lon) < 0.1
+            );
+            if (!isDuplicate) {
+              combined.push(global);
+            }
+          }
+          setSearchResults(combined.slice(0, 8)); // Limit to 8 results
+        }
+      } catch (error) {
+        console.error('Geocoding search error:', error);
+      } finally {
+        setIsSearching(false);
+      }
+    }
+  }, []);
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      searchCities(searchQuery);
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, searchCities]);
+
+  const handleSearchSelect = async (city: SearchResult) => {
+    setSelectedCity({
+      name: city.name,
+      lat: city.lat,
+      lon: city.lon,
+      country: city.country,
+    });
     setSearchQuery("");
     setShowResults(false);
   };
@@ -155,21 +219,31 @@ export default function HomePage() {
       return;
     }
 
-    // If not, try to fetch it via API (which handles geocoding)
+    // Use geocoding API to find the city
     setLoading(true);
     try {
-      const res = await fetch(`/api/weather?city=${encodeURIComponent(searchQuery)}`);
-      if (res.ok) {
-        // Since the API returns weather data, we can try to extract coords if available, 
-        // or just rely on the fact that we found it.
-        // However, our app relies on `selectedCity` having lat/lon.
-        // Let's assume for now we can't easily switch to an arbitrary city without lat/lon in this architecture
-        // without a proper geocoding response.
-        console.log("Manual search for unknown city not fully implemented with forecast yet. Stick to the list or 'Locate Me'.");
-        alert("Za sada pretraga radi samo za gradove iz liste ili vašu lokaciju. Pokušajte 'Locate Me'.");
+      const geoRes = await fetch(`/api/geocoding?q=${encodeURIComponent(searchQuery)}&limit=1`);
+      if (geoRes.ok) {
+        const geoData = await geoRes.json();
+        if (geoData.results && geoData.results.length > 0) {
+          const city = geoData.results[0];
+          setSelectedCity({
+            name: city.name,
+            lat: city.lat,
+            lon: city.lon,
+            country: city.country,
+          });
+          setSearchQuery("");
+          setShowResults(false);
+        } else {
+          alert("Grad nije pronađen. Pokušajte sa drugim nazivom.");
+        }
       }
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error('Manual search error:', error);
+      alert("Greška pri pretrazi. Pokušajte ponovo.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -269,38 +343,62 @@ export default function HomePage() {
                     transition={{ duration: 0.2 }}
                     className="absolute top-full left-0 right-0 mt-3 sm:mt-4 bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-[60vh] sm:max-h-[400px] overflow-y-auto custom-scrollbar"
                   >
+                    {isSearching && (
+                      <div className="px-4 py-2 border-b border-slate-800 flex items-center gap-2 text-xs text-slate-400">
+                        <div className="w-3 h-3 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                        Pretražujem globalno...
+                      </div>
+                    )}
                     {searchResults.length > 0 ? (
                       <div className="p-1.5 sm:p-2 space-y-1">
-                        {searchResults.map((city) => (
+                        {searchResults.map((city, index) => (
                           <button
-                            key={`${city.name}-${city.country}`}
+                            key={`${city.name}-${city.lat}-${city.lon}-${index}`}
                             onClick={() => handleSearchSelect(city)}
                             className="w-full flex items-center justify-between p-3 sm:p-3.5 hover:bg-white/5 active:bg-white/10 rounded-xl transition-colors group/item text-left min-h-[56px]"
                           >
                             <div className="flex items-center gap-3">
-                              <div className="p-2 bg-slate-800 rounded-lg text-slate-400 group-hover/item:text-primary-400 group-hover/item:bg-primary-500/10 transition-colors">
-                                <MapPin className="w-4 h-4 sm:w-5 sm:h-5" />
+                              <div className={`p-2 rounded-lg transition-colors ${
+                                city.isLocal 
+                                  ? 'bg-primary-500/10 text-primary-400' 
+                                  : 'bg-slate-800 text-slate-400 group-hover/item:text-cyan-400 group-hover/item:bg-cyan-500/10'
+                              }`}>
+                                {city.isLocal ? (
+                                  <MapPin className="w-4 h-4 sm:w-5 sm:h-5" />
+                                ) : (
+                                  <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
+                                )}
                               </div>
                               <div>
-                                <p className="text-white font-medium text-sm sm:text-base">{city.name}</p>
-                                <p className="text-xs sm:text-sm text-slate-400">{city.country}</p>
+                                <p className="text-white font-medium text-sm sm:text-base">
+                                  {city.name}
+                                  {!city.isLocal && 'displayName' in city && city.state && (
+                                    <span className="text-slate-500 font-normal">, {city.state}</span>
+                                  )}
+                                </p>
+                                <p className="text-xs sm:text-sm text-slate-400">
+                                  {city.country}
+                                  {!city.isLocal && (
+                                    <span className="ml-2 text-xs text-cyan-400/70">• Globalno</span>
+                                  )}
+                                </p>
                               </div>
                             </div>
                             <ChevronRight className="w-4 h-4 text-slate-600 group-hover/item:text-primary-400 transition-colors opacity-0 group-hover/item:opacity-100" />
                           </button>
                         ))}
                       </div>
-                    ) : (
+                    ) : searchQuery.length >= 2 && !isSearching ? (
                       <div className="p-6 sm:p-8 text-center text-slate-400">
-                        <p className="text-sm sm:text-base">Nema rezultata za "{searchQuery}"</p>
+                        <p className="text-sm sm:text-base">Nema rezultata za &quot;{searchQuery}&quot;</p>
                         <button
                           onClick={() => handleManualSearch()}
                           className="mt-3 sm:mt-4 px-5 sm:px-6 py-2 sm:py-2.5 bg-primary-500/10 hover:bg-primary-500/20 active:bg-primary-500/30 text-primary-400 rounded-xl transition-colors text-sm font-medium min-h-[44px]"
                         >
-                          Pretraži globalno
+                          Pokušaj ponovo
                         </button>
                       </div>
-                    )}
+                    ) : null}
                   </motion.div>
                 )}
               </AnimatePresence>
