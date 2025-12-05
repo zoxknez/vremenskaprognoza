@@ -58,9 +58,9 @@ export const SOCIAL_LINKS = {
 
 // Meta podaci za SEO
 export const SITE_META = {
-  title: 'Zagađenost Vazduha',
-  description: 'Praćenje kvaliteta vazduha i vremenske prognoze za gradove na Balkanu u realnom vremenu',
-  url: 'https://zagadjenost.vercel.app',
+  title: 'Vremenska Prognoza',
+  description: 'Vremenska prognoza i kvalitet vazduha za gradove na Balkanu u realnom vremenu',
+  url: 'https://vremenskaprognoza.vercel.app',
   image: '/og-image.png',
   locale: 'sr_RS',
   type: 'website',

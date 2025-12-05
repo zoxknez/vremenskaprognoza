@@ -1,7 +1,7 @@
 {
-  "name": "Zagadjenost Vazduha - Balkan",
-  "short_name": "Vazduh",
-  "description": "Aplikacija za praćenje kvaliteta vazduha u realnom vremenu na Balkanu",
+  "name": "Vremenska Prognoza - Balkan",
+  "short_name": "Vreme",
+  "description": "Aplikacija za vremensku prognozu i kvalitet vazduha u realnom vremenu",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
