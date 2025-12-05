@@ -1,61 +1,36 @@
-import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import type { Metadata } from "next";
+import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme/ThemeProvider";
-import { Navbar, Footer } from "@/components/layout/Navigation";
 
 const inter = Inter({ 
-  subsets: ["latin", "latin-ext"],
+  subsets: ["latin"],
   variable: "--font-inter",
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({ 
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({ 
+  subsets: ["latin"],
+  variable: "--font-jetbrains",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: "AirQuality Balkan Monitor | Praćenje kvaliteta vazduha",
-    template: "%s | AirQuality Balkan",
-  },
-  description: "Najsavremenija aplikacija za praćenje kvaliteta vazduha na Balkanu u realnom vremenu. Podaci za Srbiju, Hrvatsku, BiH, Crnu Goru i druge zemlje.",
-  keywords: [
-    "zagadjenost vazduha", 
-    "kvalitet vazduha", 
-    "Balkan", 
-    "Srbija", 
-    "AQI", 
-    "PM2.5", 
-    "PM10",
-    "air quality",
-    "pollution",
-    "real-time monitoring"
-  ],
-  authors: [{ name: "AirQuality Team", url: "https://github.com/zoxknez" }],
-  creator: "AirQuality Team",
+  title: "VremenskaPrognoza | Vremenska prognoza i kvalitet vazduha",
+  description: "Pratite vremensku prognozu, kvalitet vazduha, UV index i mnogo više za gradove širom Balkana i sveta.",
+  keywords: ["vremenska prognoza", "kvalitet vazduha", "AQI", "vreme", "meteorologija", "Srbija", "Balkan"],
+  authors: [{ name: "VremenskaPrognoza" }],
   openGraph: {
-    title: "AirQuality Balkan Monitor",
-    description: "Praćenje kvaliteta vazduha u realnom vremenu na Balkanu",
+    title: "VremenskaPrognoza | Vremenska prognoza i kvalitet vazduha",
+    description: "Pratite vremensku prognozu i kvalitet vazduha u realnom vremenu",
     type: "website",
     locale: "sr_RS",
-    siteName: "AirQuality Balkan",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "AirQuality Balkan Monitor",
-    description: "Praćenje kvaliteta vazduha u realnom vremenu na Balkanu",
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-  manifest: "/manifest.json",
-};
-
-export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
-  ],
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 5,
 };
 
 export default function RootLayout({
@@ -64,15 +39,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="sr" suppressHydrationWarning className={inter.variable}>
-      <body className="min-h-screen flex flex-col bg-background font-sans antialiased">
-        <ThemeProvider defaultTheme="system" storageKey="air-quality-theme">
-          <Navbar />
-          <main className="flex-1">
-            {children}
-          </main>
-          <Footer />
-        </ThemeProvider>
+    <html lang="sr" className="dark">
+      <body className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans`}>
+        {/* Noise texture overlay */}
+        <div className="noise-overlay" aria-hidden="true" />
+        
+        {/* Grid pattern background */}
+        <div className="fixed inset-0 grid-pattern pointer-events-none" aria-hidden="true" />
+        
+        {/* Main content */}
+        <div className="relative min-h-screen">
+          {children}
+        </div>
       </body>
     </html>
   );
