@@ -10,7 +10,7 @@ import {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { subscription, userId, preferences } = body;
+    const { subscription, userId } = body;
 
     if (!subscription || !userId) {
       return NextResponse.json(

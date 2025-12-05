@@ -69,7 +69,7 @@ const getHealthRecommendations = (aqi: number): string[] => {
 };
 
 export default function KvalitetVazduhaPage() {
-  const [selectedCity, setSelectedCity] = useState(POPULAR_CITIES[0]);
+  const [selectedCity, setSelectedCity] = useState<typeof POPULAR_CITIES[0] | undefined>(POPULAR_CITIES[0]);
   const [airQuality, setAirQuality] = useState<AirQualityData | null>(null);
   const [allCitiesAqi, setAllCitiesAqi] = useState<{ name: string; country: string; aqi: number }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,8 +115,6 @@ export default function KvalitetVazduhaPage() {
   };
 
   const fetchAllCitiesAqi = async () => {
-    const results: { name: string; country: string; aqi: number }[] = [];
-
     // Use a subset of popular cities to avoid too many requests
     const citiesToFetch = POPULAR_CITIES.sort(() => Math.random() - 0.5).slice(0, 12);
 
@@ -149,7 +147,9 @@ export default function KvalitetVazduhaPage() {
   };
 
   useEffect(() => {
-    fetchAirQuality(selectedCity);
+    if (selectedCity) {
+      fetchAirQuality(selectedCity);
+    }
     fetchAllCitiesAqi();
   }, [selectedCity]);
 
@@ -195,7 +195,7 @@ export default function KvalitetVazduhaPage() {
             <div className="relative">
               <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500 pointer-events-none" />
               <select
-                value={selectedCity.name}
+                value={selectedCity?.name ?? ''}
                 onChange={(e) => {
                   const city = POPULAR_CITIES.find(c => c.name === e.target.value);
                   if (city) setSelectedCity(city);
@@ -212,8 +212,8 @@ export default function KvalitetVazduhaPage() {
             </div>
 
             <button
-              onClick={() => fetchAirQuality(selectedCity)}
-              disabled={loading}
+              onClick={() => selectedCity && fetchAirQuality(selectedCity)}
+              disabled={loading || !selectedCity}
               className="p-3 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl text-emerald-400 transition-all active:scale-95"
             >
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
@@ -242,22 +242,24 @@ export default function KvalitetVazduhaPage() {
                   <div>
                     <div className="flex items-center gap-3">
                       <h2 className="text-2xl font-bold text-white">
-                        {selectedCity.name}, {selectedCity.country}
+                        {selectedCity?.name ?? 'Grad'}, {selectedCity?.country ?? ''}
                       </h2>
-                      <button
-                        onClick={() => toggleFavorite({
-                          name: selectedCity.name,
-                          country: selectedCity.country,
-                          lat: selectedCity.lat,
-                          lon: selectedCity.lon
-                        })}
-                        className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
-                      >
-                        <Heart
-                          className={`w-6 h-6 transition-colors ${isFavorite(selectedCity.name) ? "fill-white text-white" : "text-white/70 hover:text-white"
-                            }`}
-                        />
-                      </button>
+                      {selectedCity && (
+                        <button
+                          onClick={() => toggleFavorite({
+                            name: selectedCity.name,
+                            country: selectedCity.country,
+                            lat: selectedCity.lat,
+                            lon: selectedCity.lon
+                          })}
+                          className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                        >
+                          <Heart
+                            className={`w-6 h-6 transition-colors ${isFavorite(selectedCity.name) ? "fill-white text-white" : "text-white/70 hover:text-white"
+                              }`}
+                          />
+                        </button>
+                      )}
                     </div>
                     <p className="text-slate-200/80">Indeks kvaliteta vazduha (AQI)</p>
                   </div>
@@ -401,7 +403,7 @@ export default function KvalitetVazduhaPage() {
                         const cityData = POPULAR_CITIES.find(c => c.name === city.name);
                         if (cityData) setSelectedCity(cityData);
                       }}
-                      className={`p-4 rounded-2xl border transition-all ${city.name === selectedCity.name
+                      className={`p-4 rounded-2xl border transition-all ${city.name === selectedCity?.name
                         ? 'bg-cyan-500/20 border-cyan-500/50'
                         : 'bg-slate-700/20 border-slate-700/30 hover:border-slate-600/50'
                         }`}

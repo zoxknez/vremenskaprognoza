@@ -1,13 +1,11 @@
 /// <reference lib="webworker" />
 
-const CACHE_NAME = 'air-quality-v1';
-const RUNTIME_CACHE = 'air-quality-runtime-v1';
+const CACHE_NAME = 'air-quality-v2';
+const RUNTIME_CACHE = 'air-quality-runtime-v2';
 
 // Resursi koji se keširaju pri instalaciji
 const PRECACHE_URLS = [
   '/',
-  '/dashboard',
-  '/offline',
   '/manifest.json',
 ];
 
@@ -15,6 +13,8 @@ const PRECACHE_URLS = [
 const API_URLS = [
   '/api/air-quality',
   '/api/stations',
+  '/api/weather',
+  '/api/forecast',
 ];
 
 // Instalacija service workera

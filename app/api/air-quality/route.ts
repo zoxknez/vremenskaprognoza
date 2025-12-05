@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchAllAirQualityData } from '@/lib/api/aggregate';
+import { calculateAQI } from '@/lib/utils/aqi';
 
 const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
 
@@ -7,6 +8,19 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const lat = searchParams.get('lat');
   const lon = searchParams.get('lon');
+  
+  // Validacija koordinata
+  if (lat && lon) {
+    const latNum = parseFloat(lat);
+    const lonNum = parseFloat(lon);
+    
+    if (isNaN(latNum) || isNaN(lonNum) || latNum < -90 || latNum > 90 || lonNum < -180 || lonNum > 180) {
+      return NextResponse.json(
+        { error: 'Neispravne koordinate' },
+        { status: 400 }
+      );
+    }
+  }
 
   try {
     // If lat/lon provided, fetch air quality for specific location
@@ -24,14 +38,8 @@ export async function GET(request: NextRequest) {
       const pm25 = components.pm2_5 || 0;
       const pm10 = components.pm10 || 0;
       
-      // Calculate AQI from PM2.5 (US EPA standard)
-      let aqi = 50;
-      if (pm25 <= 12) aqi = Math.round((50 / 12) * pm25);
-      else if (pm25 <= 35.4) aqi = Math.round(50 + (50 / 23.4) * (pm25 - 12));
-      else if (pm25 <= 55.4) aqi = Math.round(100 + (50 / 20) * (pm25 - 35.4));
-      else if (pm25 <= 150.4) aqi = Math.round(150 + (50 / 95) * (pm25 - 55.4));
-      else if (pm25 <= 250.4) aqi = Math.round(200 + (100 / 100) * (pm25 - 150.4));
-      else aqi = Math.round(300 + (100 / 150) * (pm25 - 250.4));
+      // Koristi centralizovanu AQI kalkulaciju
+      const aqi = calculateAQI(pm25, pm10);
 
       return NextResponse.json({
         aqi: Math.max(aqi, 1),

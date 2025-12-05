@@ -1,14 +1,17 @@
 {
   "name": "Zagadjenost Vazduha - Balkan",
-  "short_name": "AirQuality",
+  "short_name": "Vazduh",
   "description": "Aplikacija za praćenje kvaliteta vazduha u realnom vremenu na Balkanu",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#22c55e",
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "sr",
+  "dir": "ltr",
+  "categories": ["weather", "health", "utilities"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon-72x72.png",

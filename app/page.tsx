@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, MapPin, Locate, Clock, ChevronRight } from "lucide-react";
+import { Search, MapPin, Locate, ChevronRight } from "lucide-react";
 import { POPULAR_CITIES } from "@/lib/api/balkan-countries";
 import { WeatherData, ForecastData, CityData } from "@/lib/types/weather";
 import WeatherCard from "@/components/weather/WeatherCard";
@@ -12,12 +12,12 @@ import CityList from "@/components/weather/CityList";
 import { useFavorites } from "@/hooks/useFavorites";
 
 export default function HomePage() {
-  const [selectedCity, setSelectedCity] = useState(POPULAR_CITIES[0]);
+  const [selectedCity, setSelectedCity] = useState<typeof POPULAR_CITIES[0] | undefined>(POPULAR_CITIES[0]);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [forecast, setForecast] = useState<ForecastData[]>([]);
   const [otherCities, setOtherCities] = useState<CityData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingOtherCities, setLoadingOtherCities] = useState(true);
+  const [, setLoadingOtherCities] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<typeof POPULAR_CITIES>([]);
   const [showResults, setShowResults] = useState(false);
@@ -119,7 +119,9 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    fetchWeatherData(selectedCity);
+    if (selectedCity) {
+      fetchWeatherData(selectedCity);
+    }
   }, [selectedCity]);
 
   // Search handler
@@ -158,7 +160,6 @@ export default function HomePage() {
     try {
       const res = await fetch(`/api/weather?city=${encodeURIComponent(searchQuery)}`);
       if (res.ok) {
-        const data = await res.json();
         // Since the API returns weather data, we can try to extract coords if available, 
         // or just rely on the fact that we found it.
         // However, our app relies on `selectedCity` having lat/lon.
@@ -318,11 +319,11 @@ export default function HomePage() {
             <WeatherCard
               data={weather}
               loading={loading}
-              onRefresh={() => fetchWeatherData(selectedCity)}
+              onRefresh={() => selectedCity && fetchWeatherData(selectedCity)}
               currentTime={currentTime}
               currentDate={currentDate}
-              isFavorite={isFavorite(selectedCity.name)}
-              onToggleFavorite={() => toggleFavorite({
+              isFavorite={selectedCity ? isFavorite(selectedCity.name) : false}
+              onToggleFavorite={() => selectedCity && toggleFavorite({
                 name: selectedCity.name,
                 country: selectedCity.country,
                 lat: selectedCity.lat,

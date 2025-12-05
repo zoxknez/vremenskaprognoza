@@ -6,7 +6,6 @@ import {
   Calendar,
   Clock,
   MapPin,
-  Thermometer,
   Droplets,
   Wind,
   Sun,
@@ -72,7 +71,7 @@ const getWeatherIcon = (description: string, size: number = 32) => {
 };
 
 export default function ProgonzaPage() {
-  const [selectedCity, setSelectedCity] = useState(POPULAR_CITIES[0]);
+  const [selectedCity, setSelectedCity] = useState<typeof POPULAR_CITIES[0] | undefined>(POPULAR_CITIES[0]);
   const [hourlyForecast, setHourlyForecast] = useState<HourlyForecast[]>([]);
   const [dailyForecast, setDailyForecast] = useState<DailyForecast[]>([]);
   const [loading, setLoading] = useState(true);
@@ -150,7 +149,9 @@ export default function ProgonzaPage() {
   };
 
   useEffect(() => {
-    fetchForecast(selectedCity);
+    if (selectedCity) {
+      fetchForecast(selectedCity);
+    }
   }, [selectedCity]);
 
   return (
@@ -181,7 +182,7 @@ export default function ProgonzaPage() {
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400 pointer-events-none" />
                 <select
-                  value={selectedCity.name}
+                  value={selectedCity?.name ?? ''}
                   onChange={(e) => {
                     const city = POPULAR_CITIES.find(c => c.name === e.target.value);
                     if (city) setSelectedCity(city);
@@ -198,8 +199,8 @@ export default function ProgonzaPage() {
               </div>
 
               <button
-                onClick={() => fetchForecast(selectedCity)}
-                disabled={loading}
+                onClick={() => selectedCity && fetchForecast(selectedCity)}
+                disabled={loading || !selectedCity}
                 className="p-3 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 rounded-xl text-cyan-400 transition-colors"
               >
                 <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />

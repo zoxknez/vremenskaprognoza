@@ -99,13 +99,14 @@ export async function GET(request: NextRequest) {
       dayData.pop.push((item.pop || 0) * 100);
     });
 
-    const daily = Array.from(dailyMap.values()).slice(0, 7).map((day: any) => {
+    const daily = Array.from(dailyMap.values()).slice(0, 7).map((day: { date: string; dayName: string; temps: number[]; humidity: number[]; windSpeed: number[]; icons: string[]; descriptions: string[]; pop: number[] }) => {
       // Get the most common description
-      const descCounts = day.descriptions.reduce((acc: any, desc: string) => {
+      const descCounts = day.descriptions.reduce((acc: Record<string, number>, desc: string) => {
         acc[desc] = (acc[desc] || 0) + 1;
         return acc;
       }, {});
-      const mostCommonDesc = Object.entries(descCounts).sort((a: any, b: any) => b[1] - a[1])[0][0];
+      const sortedDesc = Object.entries(descCounts).sort((a, b) => b[1] - a[1]);
+      const mostCommonDesc = sortedDesc[0]?.[0] ?? 'Oblačno';
       
       // Calculate sunrise/sunset (approximate)
       const date = new Date(day.date);

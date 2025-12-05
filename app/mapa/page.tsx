@@ -16,13 +16,18 @@ import {
   ZoomOut,
   Locate,
   X,
-  RefreshCw,
 } from 'lucide-react';
 
 import { POPULAR_CITIES } from '@/lib/api/balkan-countries';
 
-// Mapbox token from environment
-mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.eyJ1Ijoiem94a25leiIsImEiOiJjbWlzNWt0MDEwbGJnNWlzaXJ2ZDgzeDZnIn0.raQT7wvAQ6dyV4XR9WVzNg';
+// Mapbox token from environment - OBAVEZNO postaviti u .env.local
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+
+if (MAPBOX_TOKEN) {
+  mapboxgl.accessToken = MAPBOX_TOKEN;
+  // Onemogući Mapbox telemetriju/analytics da izbegnemo ERR_BLOCKED_BY_CLIENT greške od ad blockera
+  (mapboxgl as unknown as { config: { EVENTS_URL?: string } }).config.EVENTS_URL = ''
+}
 
 interface LocationData {
   id: string;
@@ -132,6 +137,13 @@ export default function MapPage() {
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
+    
+    // Proveri da li je token postavljen
+    if (!MAPBOX_TOKEN) {
+      console.error('NEXT_PUBLIC_MAPBOX_TOKEN nije postavljen');
+      setIsLoading(false);
+      return;
+    }
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
@@ -252,6 +264,29 @@ export default function MapPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {/* Fallback ako nema Mapbox tokena */}
+      {!MAPBOX_TOKEN && (
+        <div className="min-h-screen flex flex-col items-center justify-center p-4">
+          <div className="text-center max-w-md">
+            <div className="w-16 h-16 mx-auto mb-4 bg-yellow-500/10 rounded-full flex items-center justify-center">
+              <Layers className="w-8 h-8 text-yellow-500" />
+            </div>
+            <h1 className="text-2xl font-bold text-white mb-2">Mapa nije dostupna</h1>
+            <p className="text-slate-400 mb-6">
+              Mapbox API ključ nije konfigurisan. Postavite NEXT_PUBLIC_MAPBOX_TOKEN u .env.local fajlu.
+            </p>
+            <Link 
+              href="/" 
+              className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg transition-colors"
+            >
+              <ArrowLeft size={18} />
+              Nazad na početnu
+            </Link>
+          </div>
+        </div>
+      )}
+      
+      {MAPBOX_TOKEN && (
       <main className="h-screen flex flex-col pt-20">
         {/* Header */}
         <div className="absolute top-4 left-4 right-4 z-10 pointer-events-none">
@@ -444,6 +479,7 @@ export default function MapPage() {
           </AnimatePresence>
         </div>
       </main>
+      )}
     </div>
   );
 }

@@ -3,7 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Github, Globe, Send, MessageSquare, User, AtSign, Mail, Sparkles, CheckCircle2, ExternalLink } from "lucide-react";
+import { Github, Globe, Send, MessageSquare, User, AtSign, Mail, Sparkles, CheckCircle2, ExternalLink, AlertCircle } from "lucide-react";
+
+interface FormErrors {
+  name?: string[];
+  email?: string[];
+  message?: string[];
+}
 
 export default function KontaktPage() {
   const [formData, setFormData] = useState({
@@ -13,16 +19,37 @@ export default function KontaktPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
+    setFieldErrors({});
     
-    // Simulacija slanja
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    setSubmitted(true);
-    setIsSubmitting(false);
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        if (data.details) {
+          setFieldErrors(data.details);
+        }
+        throw new Error(data.error || 'Došlo je do greške');
+      }
+      
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Došlo je do greške pri slanju');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -162,6 +189,8 @@ export default function KontaktPage() {
                   <button
                     onClick={() => {
                       setSubmitted(false);
+                      setError(null);
+                      setFieldErrors({});
                       setFormData({ name: "", email: "", message: "" });
                     }}
                     className="text-sky-400 hover:text-sky-300 transition-colors font-medium"
@@ -171,6 +200,13 @@ export default function KontaktPage() {
                 </motion.div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {error && (
+                    <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-red-400 text-sm">{error}</p>
+                    </div>
+                  )}
+                  
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -186,9 +222,14 @@ export default function KontaktPage() {
                           }
                           placeholder="Vaše ime"
                           required
-                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
+                          minLength={2}
+                          maxLength={100}
+                          className={`w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all ${fieldErrors.name ? 'border-red-500' : 'border-slate-700'}`}
                         />
                       </div>
+                      {fieldErrors.name && (
+                        <p className="text-red-400 text-xs mt-1">{fieldErrors.name[0]}</p>
+                      )}
                     </div>
 
                     <div>
@@ -205,9 +246,12 @@ export default function KontaktPage() {
                           }
                           placeholder="vas@email.com"
                           required
-                          className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
+                          className={`w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all ${fieldErrors.email ? 'border-red-500' : 'border-slate-700'}`}
                         />
                       </div>
+                      {fieldErrors.email && (
+                        <p className="text-red-400 text-xs mt-1">{fieldErrors.email[0]}</p>
+                      )}
                     </div>
                   </div>
 
@@ -222,9 +266,14 @@ export default function KontaktPage() {
                       }
                       placeholder="Napišite vašu poruku ovde..."
                       required
+                      minLength={10}
+                      maxLength={5000}
                       rows={6}
-                      className="w-full px-4 py-3.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all resize-none"
+                      className={`w-full px-4 py-3.5 bg-slate-800/50 border rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all resize-none ${fieldErrors.message ? 'border-red-500' : 'border-slate-700'}`}
                     />
+                    {fieldErrors.message && (
+                      <p className="text-red-400 text-xs mt-1">{fieldErrors.message[0]}</p>
+                    )}
                   </div>
 
                   <button
