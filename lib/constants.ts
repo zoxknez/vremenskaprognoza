@@ -58,9 +58,9 @@ export const SOCIAL_LINKS = {
 
 // Meta podaci za SEO
 export const SITE_META = {
-  title: 'Vremenska Prognoza',
+  title: 'VremeVazduh',
   description: 'Vremenska prognoza i kvalitet vazduha za gradove na Balkanu u realnom vremenu',
-  url: 'https://vremenskaprognoza.vercel.app',
+  url: 'https://vremevazduh.space',
   image: '/og-image.png',
   locale: 'sr_RS',
   type: 'website',

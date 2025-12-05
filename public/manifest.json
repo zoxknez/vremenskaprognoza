@@ -1,7 +1,7 @@
 {
-  "name": "Vremenska Prognoza - Balkan",
-  "short_name": "Vreme",
-  "description": "Aplikacija za vremensku prognozu i kvalitet vazduha u realnom vremenu",
+  "name": "VremeVazduh - Vremenska Prognoza",
+  "short_name": "VremeVazduh",
+  "description": "Vremenska prognoza i kvalitet vazduha u realnom vremenu za Balkan i svet",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",

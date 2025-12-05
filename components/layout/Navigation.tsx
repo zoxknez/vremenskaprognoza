@@ -84,7 +84,7 @@ export function Navigation() {
                   </div>
                 </div>
                 <span className="font-display font-bold text-xl text-white hidden sm:block tracking-tight">
-                  VremenskaPrognoza
+                  VremeVazduh
                 </span>
               </Link>
 

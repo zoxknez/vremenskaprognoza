@@ -12,7 +12,7 @@ export function Footer() {
               <Cloud className="text-white" size={16} />
             </div>
             <span className="font-bold text-lg text-white">
-              VremenskaPrognoza
+              VremeVazduh
             </span>
           </Link>
 
@@ -55,7 +55,7 @@ export function Footer() {
         {/* Copyright */}
         <div className="mt-6 pt-6 border-t border-slate-800/50 text-center">
           <p className="text-slate-500 text-sm">
-            © {new Date().getFullYear()} VremenskaPrognoza. Sva prava zadržana.
+            © {new Date().getFullYear()} VremeVazduh. Sva prava zadržana.
           </p>
         </div>
       </div>

@@ -34,15 +34,16 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://vremevazduh.space'),
   title: {
-    default: "VremenskaPrognoza | Vremenska prognoza i kvalitet vazduha",
-    template: "%s | VremenskaPrognoza",
+    default: "VremeVazduh | Vremenska prognoza i kvalitet vazduha",
+    template: "%s | VremeVazduh",
   },
   description: "Pratite vremensku prognozu, kvalitet vazduha, UV index i mnogo više za gradove širom Balkana i sveta.",
-  keywords: ["vremenska prognoza", "kvalitet vazduha", "AQI", "vreme", "meteorologija", "Srbija", "Balkan", "PM2.5", "PM10"],
-  authors: [{ name: "VremenskaPrognoza", url: "https://github.com/zoxknez" }],
-  creator: "VremenskaPrognoza",
-  publisher: "VremenskaPrognoza",
+  keywords: ["vremenska prognoza", "kvalitet vazduha", "AQI", "vreme", "meteorologija", "Srbija", "Balkan", "PM2.5", "PM10", "vremevazduh"],
+  authors: [{ name: "VremeVazduh", url: "https://vremevazduh.space" }],
+  creator: "VremeVazduh",
+  publisher: "VremeVazduh",
   robots: {
     index: true,
     follow: true,
@@ -57,22 +58,22 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "sr_RS",
-    url: "https://vremenskaprognoza.vercel.app",
-    siteName: "VremenskaPrognoza",
-    title: "VremenskaPrognoza | Vremenska prognoza i kvalitet vazduha",
+    url: "https://vremevazduh.space",
+    siteName: "VremeVazduh",
+    title: "VremeVazduh | Vremenska prognoza i kvalitet vazduha",
     description: "Pratite vremensku prognozu i kvalitet vazduha u realnom vremenu za gradove na Balkanu",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "VremenskaPrognoza - Vremenska prognoza i kvalitet vazduha",
+        alt: "VremeVazduh - Vremenska prognoza i kvalitet vazduha",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "VremenskaPrognoza | Vremenska prognoza i kvalitet vazduha",
+    title: "VremeVazduh | Vremenska prognoza i kvalitet vazduha",
     description: "Pratite vremensku prognozu i kvalitet vazduha u realnom vremenu",
     images: ["/og-image.png"],
   },
@@ -88,7 +89,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "VremenskaPrognoza",
+    title: "VremeVazduh",
   },
   formatDetection: {
     telephone: false,

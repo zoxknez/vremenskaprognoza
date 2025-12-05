@@ -89,7 +89,7 @@ export default function OAutoruPage() {
             O Projektu
           </h3>
           <p className="text-slate-300 leading-relaxed mb-4">
-            <span className="text-white font-semibold">VremenskaPrognoza</span> je moderna web aplikacija za praćenje vremenskih uslova 
+            <span className="text-white font-semibold">VremeVazduh</span> je moderna web aplikacija za praćenje vremenskih uslova 
             i kvaliteta vazduha na Balkanu. Projekat je razvijen sa ciljem da pruži 
             korisnicima jednostavan i intuitivan način za praćenje meteoroloških podataka.
           </p>
