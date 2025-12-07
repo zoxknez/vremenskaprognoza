@@ -27,12 +27,14 @@ import {
   ChevronRight,
   Sparkles,
   TrendingUp,
+  Navigation,
+  Loader2,
 } from "lucide-react";
 
 
 
 export default function HomePage() {
-  const [selectedCity, setSelectedCity] = useState<{ name: string; lat: number; lon: number; country: string } | undefined>(POPULAR_CITIES[0]);
+  const [selectedCity, setSelectedCity] = useState<{ name: string; lat: number; lon: number; country: string } | undefined>(undefined);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [forecast, setForecast] = useState<ForecastData[]>([]);
   const [otherCities, setOtherCities] = useState<CityData[]>([]);
@@ -43,8 +45,106 @@ export default function HomePage() {
   const [currentDate, setCurrentDate] = useState("");
   const [sunData, setSunData] = useState<{ sunrise: string; sunset: string } | null>(null);
   const [uvIndex, setUvIndex] = useState<number | null>(null);
+  const [isLocating, setIsLocating] = useState(true);
+  const [locationPermission, setLocationPermission] = useState<'prompt' | 'granted' | 'denied' | 'unavailable'>('prompt');
 
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
+
+  // Auto-detect user location on first load
+  useEffect(() => {
+    const detectLocation = async () => {
+      // Check if we've already stored a location preference
+      const storedLocation = localStorage.getItem('userLocation');
+      if (storedLocation) {
+        try {
+          const location = JSON.parse(storedLocation);
+          setSelectedCity(location);
+          setIsLocating(false);
+          return;
+        } catch {
+          localStorage.removeItem('userLocation');
+        }
+      }
+
+      // Check if geolocation is available
+      if (!navigator.geolocation) {
+        console.log('Geolocation not supported');
+        setLocationPermission('unavailable');
+        setSelectedCity(POPULAR_CITIES[0]);
+        setIsLocating(false);
+        return;
+      }
+
+      // Try to get user's location
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000 // 5 minutes cache
+          });
+        });
+
+        const { latitude, longitude } = position.coords;
+        setLocationPermission('granted');
+
+        // Reverse geocode to get city name
+        try {
+          const response = await fetch(
+            `/api/geocoding?lat=${latitude}&lon=${longitude}&reverse=true`
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            const cityName = data.city || data.name || 'Moja lokacija';
+            const country = data.country || 'RS';
+            
+            const userCity = {
+              name: cityName,
+              lat: latitude,
+              lon: longitude,
+              country: country,
+            };
+            
+            // Store in localStorage for next visit
+            localStorage.setItem('userLocation', JSON.stringify(userCity));
+            setSelectedCity(userCity);
+          } else {
+            // Fallback - use coordinates with generic name
+            const userCity = {
+              name: 'Moja lokacija',
+              lat: latitude,
+              lon: longitude,
+              country: 'RS',
+            };
+            localStorage.setItem('userLocation', JSON.stringify(userCity));
+            setSelectedCity(userCity);
+          }
+        } catch {
+          // Fallback on geocoding error
+          const userCity = {
+            name: 'Moja lokacija',
+            lat: latitude,
+            lon: longitude,
+            country: 'RS',
+          };
+          setSelectedCity(userCity);
+        }
+      } catch (error) {
+        // User denied or error occurred
+        const geoError = error as GeolocationPositionError;
+        if (geoError.code === 1) {
+          setLocationPermission('denied');
+        }
+        console.log('Location access denied or error:', geoError.message);
+        setSelectedCity(POPULAR_CITIES[0]);
+      } finally {
+        setIsLocating(false);
+      }
+    };
+
+    detectLocation();
+  }, []);
 
   useEffect(() => {
     const updateTime = () => {
@@ -186,12 +286,54 @@ export default function HomePage() {
   }, [selectedCity]);
 
   const handleSearchSelect = (city: SearchResult) => {
-    setSelectedCity({
+    const newCity = {
       name: city.name,
       lat: city.lat,
       lon: city.lon,
       country: city.country,
-    });
+    };
+    // Save user's selection
+    localStorage.setItem('userLocation', JSON.stringify(newCity));
+    setSelectedCity(newCity);
+  };
+
+  // Reset to auto-detect location
+  const handleResetLocation = async () => {
+    localStorage.removeItem('userLocation');
+    setIsLocating(true);
+    
+    if (navigator.geolocation) {
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+          });
+        });
+
+        const { latitude, longitude } = position.coords;
+        
+        const response = await fetch(
+          `/api/geocoding?lat=${latitude}&lon=${longitude}&reverse=true`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          const userCity = {
+            name: data.city || data.name || 'Moja lokacija',
+            lat: latitude,
+            lon: longitude,
+            country: data.country || 'RS',
+          };
+          localStorage.setItem('userLocation', JSON.stringify(userCity));
+          setSelectedCity(userCity);
+          setLocationPermission('granted');
+        }
+      } catch {
+        setSelectedCity(POPULAR_CITIES[0]);
+      }
+    }
+    setIsLocating(false);
   };
 
   return (
@@ -216,14 +358,71 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          {/* Search Bar */}
+          {/* Search Bar with Location */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
             className="w-full max-w-2xl relative z-20 px-4"
           >
-            <CitySearch onCitySelect={handleSearchSelect} />
+            {/* Location Status Banner */}
+            {isLocating && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-center gap-2 mb-4 p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400"
+              >
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">Detektovanje vaše lokacije...</span>
+              </motion.div>
+            )}
+
+            {!isLocating && locationPermission === 'granted' && selectedCity && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-center gap-2 mb-4 p-2 rounded-xl bg-green-500/10 border border-green-500/30"
+              >
+                <Navigation className="w-4 h-4 text-green-400 fill-green-400" />
+                <span className="text-sm text-green-400">Lokacija detektovana: {selectedCity.name}</span>
+              </motion.div>
+            )}
+
+            {!isLocating && locationPermission === 'denied' && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-between gap-2 mb-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30"
+              >
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-yellow-400" />
+                  <span className="text-sm text-yellow-400">Pristup lokaciji odbijen</span>
+                </div>
+                <button
+                  onClick={handleResetLocation}
+                  className="text-xs text-cyan-400 hover:text-cyan-300 underline"
+                >
+                  Pokušaj ponovo
+                </button>
+              </motion.div>
+            )}
+
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <CitySearch onCitySelect={handleSearchSelect} />
+              </div>
+              {locationPermission !== 'granted' && !isLocating && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  onClick={handleResetLocation}
+                  className="px-4 py-3 bg-slate-800/80 border border-slate-700 rounded-xl text-slate-300 hover:text-white hover:border-cyan-500/50 hover:bg-slate-800 transition-all flex items-center gap-2"
+                  title="Koristi moju lokaciju"
+                >
+                  <Navigation className="w-5 h-5" />
+                </motion.button>
+              )}
+            </div>
           </motion.div>
         </div>
 
