@@ -595,9 +595,11 @@ export default function ProgonzaPage() {
             </div>
           </motion.div>
         )}
+          </>
+        )}
 
         {/* Daily Forecast */}
-        {!loading && activeTab === "daily" && (
+        {activeTab === "daily" && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
