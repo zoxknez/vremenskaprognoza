@@ -16,6 +16,9 @@ export interface WeatherData {
     so2?: number;
     o3?: number;
     co?: number;
+    uvi?: number;
+    sunrise?: number;
+    sunset?: number;
     dispersion?: {
         status: 'good' | 'moderate' | 'poor';
         reason: string;

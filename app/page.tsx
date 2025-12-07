@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import CitySearch, { SearchResult } from "@/components/common/CitySearch";
 import { POPULAR_CITIES } from "@/lib/api/balkan-countries";
 import { WeatherData, ForecastData, CityData } from "@/lib/types/weather";
@@ -10,6 +11,23 @@ import AirQualityCard from "@/components/weather/AirQualityCard";
 import HourlyForecast from "@/components/weather/HourlyForecast";
 import CityList from "@/components/weather/CityList";
 import { useFavorites } from "@/hooks/useFavorites";
+import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
+import {
+  Map,
+  BarChart3,
+  Wind,
+  Calendar,
+  Heart,
+  Sunrise,
+  Sunset,
+  Sun,
+  Shield,
+  AlertTriangle,
+  RefreshCw,
+  ChevronRight,
+  Sparkles,
+  TrendingUp,
+} from "lucide-react";
 
 
 
@@ -19,11 +37,14 @@ export default function HomePage() {
   const [forecast, setForecast] = useState<ForecastData[]>([]);
   const [otherCities, setOtherCities] = useState<CityData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [, setLoadingOtherCities] = useState(true);
   const [currentTime, setCurrentTime] = useState("");
   const [currentDate, setCurrentDate] = useState("");
+  const [sunData, setSunData] = useState<{ sunrise: string; sunset: string } | null>(null);
+  const [uvIndex, setUvIndex] = useState<number | null>(null);
 
-  const { isFavorite, toggleFavorite } = useFavorites();
+  const { favorites, isFavorite, toggleFavorite } = useFavorites();
 
   useEffect(() => {
     const updateTime = () => {
@@ -51,18 +72,22 @@ export default function HomePage() {
   const fetchWeatherData = async (city: { name: string; lat: number; lon: number; country: string }) => {
     setLoading(true);
     setLoadingOtherCities(true);
+    setError(null);
     try {
       // Prepare promises for parallel execution
       const weatherPromise = fetch(
         `/api/weather?lat=${city.lat}&lon=${city.lon}&city=${encodeURIComponent(city.name)}`
-      ).then(res => res.json());
+      ).then(res => {
+        if (!res.ok) throw new Error('Greška pri učitavanju vremenske prognoze');
+        return res.json();
+      });
 
       const forecastPromise = fetch(
         `/api/forecast?lat=${city.lat}&lon=${city.lon}`
       ).then(res => res.json());
 
       // Prepare other cities promises
-      const otherCityList = POPULAR_CITIES.filter(c => c.name !== city.name).slice(0, 4);
+      const otherCityList = POPULAR_CITIES.filter(c => c.name !== city.name).slice(0, 6);
       const otherCitiesPromise = Promise.all(otherCityList.map(async (otherCity) => {
         try {
           const res = await fetch(
@@ -102,7 +127,24 @@ export default function HomePage() {
         aqi: weatherData.aqi,
         pm25: weatherData.pm25,
         pm10: weatherData.pm10,
+        no2: weatherData.no2,
+        so2: weatherData.so2,
+        o3: weatherData.o3,
+        co: weatherData.co,
       });
+
+      // Set sunrise/sunset data
+      if (weatherData.sunrise && weatherData.sunset) {
+        setSunData({
+          sunrise: new Date(weatherData.sunrise * 1000).toLocaleTimeString("sr-Latn-RS", { hour: "2-digit", minute: "2-digit" }),
+          sunset: new Date(weatherData.sunset * 1000).toLocaleTimeString("sr-Latn-RS", { hour: "2-digit", minute: "2-digit" }),
+        });
+      }
+
+      // Set UV Index
+      if (weatherData.uvi !== undefined) {
+        setUvIndex(weatherData.uvi);
+      }
 
       if (forecastData.hourly) {
         setForecast(forecastData.hourly.slice(0, 24));
@@ -111,11 +153,30 @@ export default function HomePage() {
       setOtherCities(otherCitiesResults.filter((c): c is CityData => c !== null));
       setLoadingOtherCities(false);
 
-    } catch (error) {
-      console.error("Error fetching weather data:", error);
+    } catch (err) {
+      console.error("Error fetching weather data:", err);
+      setError(err instanceof Error ? err.message : "Greška pri učitavanju podataka");
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to get health advice based on AQI
+  const getHealthAdvice = (aqi: number) => {
+    if (aqi <= 50) return { text: "Kvalitet vazduha je odličan. Idealno za aktivnosti na otvorenom.", color: "text-green-400", icon: "😊" };
+    if (aqi <= 100) return { text: "Prihvatljiv kvalitet. Osetljive osobe trebaju biti oprezne.", color: "text-yellow-400", icon: "😐" };
+    if (aqi <= 150) return { text: "Nezdrav za osetljive grupe. Smanjite aktivnosti napolju.", color: "text-orange-400", icon: "😷" };
+    if (aqi <= 200) return { text: "Nezdrav. Svi mogu osetiti zdravstvene efekte.", color: "text-red-400", icon: "🤒" };
+    return { text: "Veoma nezdrav! Izbegavajte boravak napolju.", color: "text-purple-400", icon: "⚠️" };
+  };
+
+  // Helper function for UV index description
+  const getUVDescription = (uv: number) => {
+    if (uv <= 2) return { text: "Nizak", color: "text-green-400" };
+    if (uv <= 5) return { text: "Umeren", color: "text-yellow-400" };
+    if (uv <= 7) return { text: "Visok", color: "text-orange-400" };
+    if (uv <= 10) return { text: "Veoma visok", color: "text-red-400" };
+    return { text: "Ekstreman", color: "text-purple-400" };
   };
 
   useEffect(() => {
@@ -135,6 +196,9 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-20 sm:pt-24 pb-8 sm:pb-12">
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt />
+      
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-7xl">
         {/* Hero Section */}
         <div className="flex flex-col items-center justify-center py-8 sm:py-12 md:py-16 lg:py-24 text-center space-y-6 sm:space-y-8">
@@ -163,13 +227,98 @@ export default function HomePage() {
           </motion.div>
         </div>
 
+        {/* Quick Actions Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.25 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-12"
+        >
+          {[
+            { href: "/prognoza", icon: Calendar, label: "7-dnevna prognoza", color: "from-blue-500 to-cyan-500" },
+            { href: "/kvalitet-vazduha", icon: Wind, label: "Kvalitet vazduha", color: "from-green-500 to-emerald-500" },
+            { href: "/mapa", icon: Map, label: "Interaktivna mapa", color: "from-purple-500 to-pink-500" },
+            { href: "/statistika", icon: BarChart3, label: "Statistika", color: "from-orange-500 to-amber-500" },
+          ].map((item, index) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="group relative overflow-hidden rounded-2xl bg-slate-800/50 border border-slate-700/50 p-4 sm:p-5 hover:border-slate-600 transition-all duration-300"
+            >
+              <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
+              <div className="relative flex flex-col items-center text-center gap-2 sm:gap-3">
+                <div className={`p-2.5 sm:p-3 rounded-xl bg-gradient-to-br ${item.color} bg-opacity-20`}>
+                  <item.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                </div>
+                <span className="text-xs sm:text-sm font-medium text-slate-300 group-hover:text-white transition-colors">
+                  {item.label}
+                </span>
+              </div>
+              <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-hover:text-slate-400 group-hover:translate-x-1 transition-all" />
+            </Link>
+          ))}
+        </motion.div>
+
+        {/* Error Display */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center gap-3"
+            >
+              <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+              <p className="text-red-300 text-sm flex-1">{error}</p>
+              <button
+                onClick={() => selectedCity && fetchWeatherData(selectedCity)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-300 text-sm transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Pokušaj ponovo
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Favorites Section */}
+        {favorites.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.28 }}
+            className="mb-8 sm:mb-12"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <Heart className="w-5 h-5 text-red-400" />
+              <h2 className="text-lg font-semibold text-white">Omiljeni gradovi</h2>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-700">
+              {favorites.map((fav) => (
+                <button
+                  key={fav.name}
+                  onClick={() => setSelectedCity(fav)}
+                  className={`flex-shrink-0 px-4 py-2.5 rounded-xl border transition-all ${
+                    selectedCity?.name === fav.name
+                      ? "bg-primary-500/20 border-primary-500/50 text-primary-300"
+                      : "bg-slate-800/50 border-slate-700/50 text-slate-300 hover:border-slate-600"
+                  }`}
+                >
+                  <span className="text-sm font-medium">{fav.name}</span>
+                  <span className="text-xs text-slate-500 ml-1.5">{fav.country}</span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
         {/* Main Content Grid */}
         {weather && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 pb-12 sm:pb-16 md:pb-20"
+            className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 pb-8 sm:pb-12"
           >
             <WeatherCard
               data={weather}
@@ -192,6 +341,89 @@ export default function HomePage() {
                 <HourlyForecast forecast={forecast} />
               )}
             </div>
+          </motion.div>
+        )}
+
+        {/* Additional Info Cards - Sun Data, UV Index, Health Advice */}
+        {weather && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.35 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12"
+          >
+            {/* Sunrise/Sunset Card */}
+            {sunData && (
+              <div className="rounded-2xl bg-slate-800/30 border border-slate-700/50 p-5 sm:p-6">
+                <h3 className="text-sm font-medium text-slate-400 mb-4 flex items-center gap-2">
+                  <Sun className="w-4 h-4 text-amber-400" />
+                  Izlazak i zalazak sunca
+                </h3>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-amber-500/10">
+                      <Sunrise className="w-5 h-5 text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Izlazak</p>
+                      <p className="text-lg font-semibold text-white">{sunData.sunrise}</p>
+                    </div>
+                  </div>
+                  <div className="h-8 w-px bg-slate-700" />
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-orange-500/10">
+                      <Sunset className="w-5 h-5 text-orange-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Zalazak</p>
+                      <p className="text-lg font-semibold text-white">{sunData.sunset}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* UV Index Card */}
+            {uvIndex !== null && (
+              <div className="rounded-2xl bg-slate-800/30 border border-slate-700/50 p-5 sm:p-6">
+                <h3 className="text-sm font-medium text-slate-400 mb-4 flex items-center gap-2">
+                  <Sun className="w-4 h-4 text-yellow-400" />
+                  UV Indeks
+                </h3>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`text-4xl font-bold ${getUVDescription(uvIndex).color}`}>
+                      {uvIndex.toFixed(1)}
+                    </p>
+                    <p className={`text-sm mt-1 ${getUVDescription(uvIndex).color}`}>
+                      {getUVDescription(uvIndex).text}
+                    </p>
+                  </div>
+                  <div className="w-20 h-2 rounded-full bg-slate-700 overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500"
+                      style={{ width: `${Math.min((uvIndex / 11) * 100, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Health Advice Card */}
+            {weather.aqi && (
+              <div className="rounded-2xl bg-slate-800/30 border border-slate-700/50 p-5 sm:p-6">
+                <h3 className="text-sm font-medium text-slate-400 mb-4 flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-emerald-400" />
+                  Zdravstveni savet
+                </h3>
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">{getHealthAdvice(weather.aqi).icon}</span>
+                  <p className={`text-sm ${getHealthAdvice(weather.aqi).color} leading-relaxed`}>
+                    {getHealthAdvice(weather.aqi).text}
+                  </p>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -223,6 +455,40 @@ export default function HomePage() {
               }
             }}
           />
+        </motion.div>
+
+        {/* Trending / Stats Promo Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.6 }}
+          className="pb-8"
+        >
+          <Link
+            href="/statistika"
+            className="group block rounded-3xl bg-gradient-to-r from-primary-500/10 via-cyan-500/10 to-purple-500/10 border border-slate-700/50 hover:border-primary-500/30 p-6 sm:p-8 transition-all duration-300"
+          >
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-2xl bg-primary-500/20">
+                  <TrendingUp className="w-6 h-6 text-primary-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg sm:text-xl font-semibold text-white group-hover:text-primary-300 transition-colors">
+                    Pogledajte istorijske podatke
+                  </h3>
+                  <p className="text-sm text-slate-400">
+                    Uporedite temperaturu i kvalitet vazduha kroz vreme
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-primary-400 group-hover:translate-x-2 transition-transform">
+                <span className="text-sm font-medium">Statistika</span>
+                <ChevronRight className="w-5 h-5" />
+              </div>
+            </div>
+          </Link>
         </motion.div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -12,39 +12,92 @@ import {
   Download,
   Filter,
   ChevronDown,
+  MapPin,
+  FileSpreadsheet,
+  FileText,
+  Check,
+  X,
+  RefreshCw,
+  Clock,
+  CalendarDays,
 } from 'lucide-react';
+import CitySearch, { SearchResult } from '@/components/common/CitySearch';
+import { POPULAR_CITIES } from '@/lib/api/balkan-countries';
 
-// Mock statistics data
-const monthlyAverages = [
-  { month: 'Jan', temp: 2, aqi: 85, precipitation: 45 },
-  { month: 'Feb', temp: 5, aqi: 78, precipitation: 40 },
-  { month: 'Mar', temp: 10, aqi: 65, precipitation: 50 },
-  { month: 'Apr', temp: 15, aqi: 55, precipitation: 55 },
-  { month: 'Maj', temp: 20, aqi: 48, precipitation: 70 },
-  { month: 'Jun', temp: 24, aqi: 52, precipitation: 65 },
-  { month: 'Jul', temp: 27, aqi: 58, precipitation: 45 },
-  { month: 'Avg', temp: 26, aqi: 62, precipitation: 40 },
-  { month: 'Sep', temp: 21, aqi: 55, precipitation: 50 },
-  { month: 'Okt', temp: 14, aqi: 68, precipitation: 55 },
-  { month: 'Nov', temp: 8, aqi: 82, precipitation: 60 },
-  { month: 'Dec', temp: 3, aqi: 90, precipitation: 50 },
+interface MonthlyData {
+  month: string;
+  temp: number;
+  aqi: number;
+  precipitation: number;
+}
+
+interface YearlyData {
+  year: number;
+  avgTemp: number;
+  avgAqi: number;
+  extremeHot: number;
+  extremeCold: number;
+}
+
+interface PollutedDay {
+  date: string;
+  aqi: number;
+  cause: string;
+}
+
+// Date range presets
+const DATE_PRESETS = [
+  { id: '7d', label: 'Poslednjih 7 dana' },
+  { id: '30d', label: 'Poslednjih 30 dana' },
+  { id: '90d', label: 'Poslednjih 90 dana' },
+  { id: '1y', label: 'Poslednjih godinu dana' },
+  { id: '5y', label: 'Poslednjih 5 godina' },
+  { id: 'custom', label: 'Prilagođeno...' },
 ];
 
-const yearlyComparison = [
-  { year: 2020, avgTemp: 13.2, avgAqi: 72, extremeHot: 38, extremeCold: -12 },
-  { year: 2021, avgTemp: 12.8, avgAqi: 68, extremeHot: 36, extremeCold: -15 },
-  { year: 2022, avgTemp: 14.1, avgAqi: 65, extremeHot: 40, extremeCold: -8 },
-  { year: 2023, avgTemp: 14.5, avgAqi: 62, extremeHot: 41, extremeCold: -10 },
-  { year: 2024, avgTemp: 15.2, avgAqi: 58, extremeHot: 42, extremeCold: -6 },
-];
+// Generate mock data based on city and date range
+const generateMockData = (cityName: string, dateRange: string): {
+  monthly: MonthlyData[];
+  yearly: YearlyData[];
+  polluted: PollutedDay[];
+} => {
+  // Simple hash to make data different per city
+  const hash = cityName.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+  
+  const monthly: MonthlyData[] = [
+    { month: 'Jan', temp: 2 + (hash % 5), aqi: 85 - (hash % 20), precipitation: 45 + (hash % 15) },
+    { month: 'Feb', temp: 5 + (hash % 4), aqi: 78 - (hash % 18), precipitation: 40 + (hash % 12) },
+    { month: 'Mar', temp: 10 + (hash % 3), aqi: 65 - (hash % 15), precipitation: 50 + (hash % 10) },
+    { month: 'Apr', temp: 15 + (hash % 3), aqi: 55 - (hash % 12), precipitation: 55 + (hash % 20) },
+    { month: 'Maj', temp: 20 + (hash % 4), aqi: 48 - (hash % 10), precipitation: 70 + (hash % 15) },
+    { month: 'Jun', temp: 24 + (hash % 3), aqi: 52 - (hash % 8), precipitation: 65 - (hash % 20) },
+    { month: 'Jul', temp: 27 + (hash % 4), aqi: 58 - (hash % 10), precipitation: 45 - (hash % 15) },
+    { month: 'Avg', temp: 26 + (hash % 3), aqi: 62 - (hash % 12), precipitation: 40 - (hash % 10) },
+    { month: 'Sep', temp: 21 + (hash % 3), aqi: 55 - (hash % 10), precipitation: 50 + (hash % 10) },
+    { month: 'Okt', temp: 14 + (hash % 4), aqi: 68 - (hash % 15), precipitation: 55 + (hash % 15) },
+    { month: 'Nov', temp: 8 + (hash % 3), aqi: 82 - (hash % 18), precipitation: 60 + (hash % 10) },
+    { month: 'Dec', temp: 3 + (hash % 4), aqi: 90 - (hash % 20), precipitation: 50 + (hash % 12) },
+  ];
 
-const topPollutedDays = [
-  { date: '15. Jan 2024', aqi: 156, cause: 'Grejanje + bezvetrije' },
-  { date: '22. Dec 2023', aqi: 148, cause: 'Inverzija vazduha' },
-  { date: '8. Feb 2024', aqi: 142, cause: 'Gust saobraćaj' },
-  { date: '3. Jan 2024', aqi: 138, cause: 'Grejanje' },
-  { date: '28. Nov 2023', aqi: 135, cause: 'Industrijski izvori' },
-];
+  const yearly: YearlyData[] = [
+    { year: 2020, avgTemp: 13.2 + (hash % 2), avgAqi: 72 - (hash % 10), extremeHot: 38 + (hash % 4), extremeCold: -12 - (hash % 5) },
+    { year: 2021, avgTemp: 12.8 + (hash % 2), avgAqi: 68 - (hash % 8), extremeHot: 36 + (hash % 3), extremeCold: -15 - (hash % 4) },
+    { year: 2022, avgTemp: 14.1 + (hash % 2), avgAqi: 65 - (hash % 7), extremeHot: 40 + (hash % 3), extremeCold: -8 - (hash % 4) },
+    { year: 2023, avgTemp: 14.5 + (hash % 2), avgAqi: 62 - (hash % 6), extremeHot: 41 + (hash % 3), extremeCold: -10 - (hash % 3) },
+    { year: 2024, avgTemp: 15.2 + (hash % 2), avgAqi: 58 - (hash % 5), extremeHot: 42 + (hash % 2), extremeCold: -6 - (hash % 3) },
+  ];
+
+  const causes = ['Grejanje + bezvetrije', 'Inverzija vazduha', 'Gust saobraćaj', 'Grejanje', 'Industrijski izvori'];
+  const polluted: PollutedDay[] = [
+    { date: '15. Jan 2024', aqi: 156 - (hash % 30), cause: causes[hash % 5] },
+    { date: '22. Dec 2023', aqi: 148 - (hash % 25), cause: causes[(hash + 1) % 5] },
+    { date: '8. Feb 2024', aqi: 142 - (hash % 20), cause: causes[(hash + 2) % 5] },
+    { date: '3. Jan 2024', aqi: 138 - (hash % 18), cause: causes[(hash + 3) % 5] },
+    { date: '28. Nov 2023', aqi: 135 - (hash % 15), cause: causes[(hash + 4) % 5] },
+  ];
+
+  return { monthly, yearly, polluted };
+};
 
 const records = [
   { label: 'Najviša temperatura', value: '42.6°C', date: '24. Jul 2023', trend: 'up' },
@@ -54,12 +107,151 @@ const records = [
 ];
 
 export default function StatisticsPage() {
-  const [timeRange, setTimeRange] = useState<'year' | '5years' | 'all'>('year');
+  const [selectedCity, setSelectedCity] = useState<SearchResult>(POPULAR_CITIES[0]);
+  const [dateRange, setDateRange] = useState<string>('1y');
   const [dataType, setDataType] = useState<'temperature' | 'aqi' | 'precipitation'>('temperature');
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [customDateStart, setCustomDateStart] = useState('');
+  const [customDateEnd, setCustomDateEnd] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  
+  const exportRef = useRef<HTMLDivElement>(null);
+  const datePickerRef = useRef<HTMLDivElement>(null);
+
+  // Generate data based on selected city and date range
+  const { monthly: monthlyAverages, yearly: yearlyComparison, polluted: topPollutedDays } = 
+    generateMockData(selectedCity.name, dateRange);
 
   const maxTemp = Math.max(...monthlyAverages.map(m => m.temp));
   const maxAqi = Math.max(...monthlyAverages.map(m => m.aqi));
   const maxPrecip = Math.max(...monthlyAverages.map(m => m.precipitation));
+
+  // Close dropdowns on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(event.target as Node)) {
+        setShowExportMenu(false);
+      }
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        setShowDatePicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Handle city selection
+  const handleCitySelect = useCallback((city: SearchResult) => {
+    setIsLoading(true);
+    setSelectedCity(city);
+    // Simulate API call
+    setTimeout(() => {
+      setIsLoading(false);
+      setLastUpdated(new Date());
+    }, 800);
+  }, []);
+
+  // Handle date range change
+  const handleDateRangeChange = (range: string) => {
+    if (range === 'custom') {
+      setShowDatePicker(true);
+    } else {
+      setDateRange(range);
+      setShowDatePicker(false);
+      setIsLoading(true);
+      setTimeout(() => {
+        setIsLoading(false);
+        setLastUpdated(new Date());
+      }, 500);
+    }
+  };
+
+  // Apply custom date range
+  const applyCustomDateRange = () => {
+    if (customDateStart && customDateEnd) {
+      setDateRange(`${customDateStart} - ${customDateEnd}`);
+      setShowDatePicker(false);
+      setIsLoading(true);
+      setTimeout(() => {
+        setIsLoading(false);
+        setLastUpdated(new Date());
+      }, 500);
+    }
+  };
+
+  // Export to CSV
+  const exportToCSV = () => {
+    const headers = ['Mesec', 'Temperatura (°C)', 'AQI', 'Padavine (mm)'];
+    const rows = monthlyAverages.map(m => [m.month, m.temp, m.aqi, m.precipitation]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(r => r.join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `statistika_${selectedCity.name}_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    setShowExportMenu(false);
+  };
+
+  // Export to PDF (simplified - creates printable view)
+  const exportToPDF = () => {
+    const printContent = `
+      <html>
+        <head>
+          <title>Statistika - ${selectedCity.name}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { color: #1e293b; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { border: 1px solid #e2e8f0; padding: 12px; text-align: left; }
+            th { background: #f1f5f9; }
+            .summary { display: flex; gap: 20px; margin-bottom: 20px; }
+            .stat-box { border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; }
+          </style>
+        </head>
+        <body>
+          <h1>Statistika za ${selectedCity.name}, ${selectedCity.country}</h1>
+          <p>Period: ${DATE_PRESETS.find(p => p.id === dateRange)?.label || dateRange}</p>
+          <p>Generisano: ${new Date().toLocaleDateString('sr-Latn-RS')}</p>
+          
+          <h2>Mesečni proseci</h2>
+          <table>
+            <tr><th>Mesec</th><th>Temperatura</th><th>AQI</th><th>Padavine</th></tr>
+            ${monthlyAverages.map(m => `<tr><td>${m.month}</td><td>${m.temp}°C</td><td>${m.aqi}</td><td>${m.precipitation}mm</td></tr>`).join('')}
+          </table>
+          
+          <h2>Godišnje poređenje</h2>
+          <table>
+            <tr><th>Godina</th><th>Prosečna temp.</th><th>Prosečni AQI</th><th>Maks temp.</th><th>Min temp.</th></tr>
+            ${yearlyComparison.map(y => `<tr><td>${y.year}</td><td>${y.avgTemp}°C</td><td>${y.avgAqi}</td><td>${y.extremeHot}°C</td><td>${y.extremeCold}°C</td></tr>`).join('')}
+          </table>
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.print();
+    }
+    setShowExportMenu(false);
+  };
+
+  // Refresh data
+  const refreshData = () => {
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+      setLastUpdated(new Date());
+    }, 1000);
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0e17]">
@@ -76,20 +268,164 @@ export default function StatisticsPage() {
               <span>Nazad na početnu</span>
             </Link>
             
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               <div>
                 <h1 className="text-3xl font-display font-bold text-white">Statistika</h1>
-                <p className="text-slate-400 mt-1">Istorijski podaci za Beograd</p>
+                <div className="flex items-center gap-4 mt-2">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <MapPin size={16} />
+                    <span>{selectedCity.name}, {selectedCity.country}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-500 text-sm">
+                    <Clock size={14} />
+                    <span>Ažurirano: {lastUpdated.toLocaleTimeString('sr-Latn-RS')}</span>
+                  </div>
+                </div>
               </div>
               
-              <div className="flex items-center gap-2">
-                <button className="btn-secondary">
-                  <Download size={18} />
-                  Izvezi
+              <div className="flex flex-wrap items-center gap-3">
+                {/* City Selector */}
+                <div className="w-full sm:w-64">
+                  <CitySearch 
+                    onCitySelect={handleCitySelect}
+                    initialValue={selectedCity.name}
+                    className="w-full"
+                    placeholder="Izaberi grad..."
+                  />
+                </div>
+
+                {/* Date Range Selector */}
+                <div className="relative" ref={datePickerRef}>
+                  <button
+                    onClick={() => setShowDatePicker(!showDatePicker)}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-300 hover:bg-slate-800 hover:border-slate-600 transition-all"
+                  >
+                    <CalendarDays size={18} />
+                    <span className="hidden sm:inline">{DATE_PRESETS.find(p => p.id === dateRange)?.label || dateRange}</span>
+                    <ChevronDown size={16} className={`transition-transform ${showDatePicker ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  <AnimatePresence>
+                    {showDatePicker && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute top-full right-0 mt-2 w-72 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden"
+                      >
+                        <div className="p-2">
+                          {DATE_PRESETS.filter(p => p.id !== 'custom').map((preset) => (
+                            <button
+                              key={preset.id}
+                              onClick={() => handleDateRangeChange(preset.id)}
+                              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
+                                dateRange === preset.id
+                                  ? 'bg-primary-500/20 text-primary-400'
+                                  : 'text-slate-300 hover:bg-slate-800'
+                              }`}
+                            >
+                              {preset.label}
+                              {dateRange === preset.id && <Check size={16} />}
+                            </button>
+                          ))}
+                        </div>
+                        
+                        <div className="border-t border-slate-700 p-3">
+                          <p className="text-sm text-slate-400 mb-2">Prilagođeni opseg:</p>
+                          <div className="flex gap-2 mb-2">
+                            <input
+                              type="date"
+                              value={customDateStart}
+                              onChange={(e) => setCustomDateStart(e.target.value)}
+                              className="flex-1 px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-primary-500"
+                            />
+                            <input
+                              type="date"
+                              value={customDateEnd}
+                              onChange={(e) => setCustomDateEnd(e.target.value)}
+                              className="flex-1 px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-primary-500"
+                            />
+                          </div>
+                          <button
+                            onClick={applyCustomDateRange}
+                            disabled={!customDateStart || !customDateEnd}
+                            className="w-full py-2 bg-primary-500 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-600 transition-colors"
+                          >
+                            Primeni
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Refresh Button */}
+                <button
+                  onClick={refreshData}
+                  disabled={isLoading}
+                  className="p-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all disabled:opacity-50"
+                  title="Osveži podatke"
+                >
+                  <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
                 </button>
+
+                {/* Export Button */}
+                <div className="relative" ref={exportRef}>
+                  <button
+                    onClick={() => setShowExportMenu(!showExportMenu)}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-medium"
+                  >
+                    <Download size={18} />
+                    <span className="hidden sm:inline">Izvezi</span>
+                    <ChevronDown size={16} className={`transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  <AnimatePresence>
+                    {showExportMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute top-full right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden"
+                      >
+                        <button
+                          onClick={exportToCSV}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 transition-colors"
+                        >
+                          <FileSpreadsheet size={18} className="text-green-400" />
+                          Izvezi kao CSV
+                        </button>
+                        <button
+                          onClick={exportToPDF}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 transition-colors"
+                        >
+                          <FileText size={18} className="text-red-400" />
+                          Izvezi kao PDF
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
             </div>
           </motion.div>
+
+          {/* Loading Overlay */}
+          <AnimatePresence>
+            {isLoading && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 flex items-center justify-center"
+              >
+                <div className="bg-slate-800 rounded-2xl p-6 flex flex-col items-center gap-4">
+                  <RefreshCw size={32} className="text-primary-400 animate-spin" />
+                  <p className="text-white">Učitavanje podataka...</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Quick Stats */}
           <motion.div

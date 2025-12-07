@@ -5,6 +5,7 @@ import { Navigation } from "@/components/layout/Navigation";
 import { Footer } from "@/components/layout/Footer";
 import { Providers } from "@/components/providers/Providers";
 import { Analytics } from "@vercel/analytics/next";
+import { StructuredData } from "@/components/seo/StructuredData";
 import { Suspense } from "react";
 
 const inter = Inter({ 
@@ -108,6 +109,7 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://api.openweathermap.org" />
         <link rel="preconnect" href="https://api.mapbox.com" />
+        <StructuredData />
       </head>
       <body className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
         <Providers>
