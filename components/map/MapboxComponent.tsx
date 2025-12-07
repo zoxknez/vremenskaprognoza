@@ -50,6 +50,7 @@ export default function MapboxComponent({
   const map = useRef<MapboxMap | null>(null);
   const markers = useRef<Marker[]>([]);
   const [mapboxgl, setMapboxgl] = useState<typeof import('mapbox-gl') | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Dynamically import mapbox-gl only on client
   useEffect(() => {
@@ -58,6 +59,13 @@ export default function MapboxComponent({
       if (token) {
         mapbox.default.accessToken = token;
       }
+      
+      if (!mapbox.default.supported()) {
+        setError('Vaš pretraživač ne podržava WebGL koji je neophodan za prikaz mape.');
+        onLoaded();
+        return;
+      }
+
       // Try to disable telemetry (may not work in all versions)
       try {
         const config = (mapbox.default as unknown as { config: Record<string, unknown> }).config;
@@ -72,40 +80,57 @@ export default function MapboxComponent({
       }
       setMapboxgl(mapbox);
     });
-  }, []);
+  }, [onLoaded]);
 
   // Initialize map
   useEffect(() => {
-    if (!mapboxgl || !mapContainer.current || map.current) return;
+    if (!mapboxgl || !mapContainer.current || map.current || error) return;
 
     const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
     if (!token) {
+      setError('Mapbox token nije pronađen.');
       onLoaded();
       return;
     }
 
-    map.current = new mapboxgl.default.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
-      center: [20.4633, 44.0],
-      zoom: 6,
-      pitch: 0,
-      bearing: 0,
-    });
+    try {
+      map.current = new mapboxgl.default.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/dark-v11',
+        center: [20.4633, 44.0],
+        zoom: 6,
+        pitch: 0,
+        bearing: 0,
+        attributionControl: false, // Cleaner look
+      });
 
-    map.current.on('load', () => {
-      onLoaded();
-    });
+      // Add navigation controls
+      map.current.addControl(new mapboxgl.default.NavigationControl({ showCompass: false }), 'bottom-right');
 
-    map.current.on('error', (e) => {
-      console.error('Mapbox error:', e);
+      map.current.on('load', () => {
+        onLoaded();
+      });
+
+      map.current.on('error', (e) => {
+        console.error('Mapbox error:', e);
+        if (e.error && e.error.message) {
+           // Don't show generic "Forbidden" if it's just a tile loading error, but do log it
+           if (e.error.message.includes('Forbidden') || e.error.message.includes('Unauthorized')) {
+             setError('Problem sa pristupom mapi (Invalid Token).');
+           }
+        }
+        onLoaded();
+      });
+    } catch (err) {
+      console.error('Error initializing map:', err);
+      setError('Greška pri inicijalizaciji mape.');
       onLoaded();
-    });
+    }
 
     // Fallback timeout to ensure loading state is cleared
     const timeoutId = setTimeout(() => {
       onLoaded();
-    }, 3000);
+    }, 5000); // Increased to 5s
 
     return () => {
       clearTimeout(timeoutId);
@@ -113,7 +138,7 @@ export default function MapboxComponent({
       map.current?.remove();
       map.current = null;
     };
-  }, [mapboxgl, onLoaded]);
+  }, [mapboxgl, onLoaded, error]);
 
   // Add markers function
   const addMarkers = useCallback(() => {
@@ -214,11 +239,26 @@ export default function MapboxComponent({
   };
 
   return (
-    <div className="relative w-full h-full">
-      <div ref={mapContainer} className="absolute inset-0" />
+    <div className="relative w-full h-full bg-slate-900">
+      {error ? (
+        <div className="absolute inset-0 flex items-center justify-center p-4">
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 max-w-md text-center">
+            <div className="w-12 h-12 mx-auto mb-4 bg-red-500/20 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">Greška pri učitavanju mape</h3>
+            <p className="text-slate-400 text-sm">{error}</p>
+          </div>
+        </div>
+      ) : (
+        <div ref={mapContainer} className="absolute inset-0" />
+      )}
       
-      {/* Zoom Controls */}
-      <div className="absolute right-4 bottom-24 flex flex-col gap-2 z-10">
+      {/* Zoom Controls - Only show if no error */}
+      {!error && (
+        <div className="absolute right-4 bottom-24 flex flex-col gap-2 z-10">
         <button
           onClick={handleZoomIn}
           className="p-3 bg-slate-900/90 backdrop-blur-xl text-white rounded-xl hover:bg-primary-500 transition-colors shadow-lg border border-slate-800/50"
@@ -248,6 +288,7 @@ export default function MapboxComponent({
           </svg>
         </button>
       </div>
+      )}
     </div>
   );
 }
