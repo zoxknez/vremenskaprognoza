@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -41,6 +41,34 @@ export function Navigation() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [hasNotifications] = useState(false); // Set to true when real notifications exist
+  
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
+  // Handle scroll for hiding navigation
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Always show at the top
+      if (currentScrollY < 10) {
+        setIsVisible(true);
+      } 
+      // Hide when scrolling down and past threshold
+      else if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
+        setIsVisible(false);
+      } 
+      // Show when scrolling up
+      else if (currentScrollY < lastScrollY.current) {
+        setIsVisible(true);
+      }
+      
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -73,7 +101,15 @@ export function Navigation() {
 
   return (
     <>
-      <header className="fixed top-4 left-0 right-0 z-50 px-4">
+      <motion.header 
+        className="fixed top-4 left-0 right-0 z-50 px-4"
+        initial={{ y: 0, opacity: 1 }}
+        animate={{ 
+          y: isVisible ? 0 : -100,
+          opacity: isVisible ? 1 : 0
+        }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+      >
         <nav className="max-w-7xl mx-auto bg-slate-950/70 backdrop-blur-2xl border border-slate-800/50 rounded-2xl shadow-2xl shadow-black/20">
           <div className="px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
@@ -147,7 +183,7 @@ export function Navigation() {
             </div>
           </div>
         </nav>
-      </header>
+      </motion.header>
 
       {/* Search Modal */}
       <AnimatePresence>

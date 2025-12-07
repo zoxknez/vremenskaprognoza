@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import CitySearch, { SearchResult } from "@/components/common/CitySearch";
 import { POPULAR_CITIES } from "@/lib/api/balkan-countries";
 
 interface HourlyForecast {
@@ -71,13 +72,17 @@ const getWeatherIcon = (description: string, size: number = 32) => {
 };
 
 export default function ProgonzaPage() {
-  const [selectedCity, setSelectedCity] = useState<typeof POPULAR_CITIES[0] | undefined>(POPULAR_CITIES[0]);
+  const [selectedCity, setSelectedCity] = useState<SearchResult | undefined>(POPULAR_CITIES[0]);
   const [hourlyForecast, setHourlyForecast] = useState<HourlyForecast[]>([]);
   const [dailyForecast, setDailyForecast] = useState<DailyForecast[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"hourly" | "daily">("hourly");
 
-  const fetchForecast = async (city: typeof POPULAR_CITIES[0]) => {
+  const handleSearchSelect = (city: SearchResult) => {
+    setSelectedCity(city);
+  };
+
+  const fetchForecast = async (city: SearchResult) => {
     setLoading(true);
 
     try {
@@ -178,33 +183,12 @@ export default function ProgonzaPage() {
             </div>
 
             {/* City Selector */}
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400 pointer-events-none" />
-                <select
-                  value={selectedCity?.name ?? ''}
-                  onChange={(e) => {
-                    const city = POPULAR_CITIES.find(c => c.name === e.target.value);
-                    if (city) setSelectedCity(city);
-                  }}
-                  className="pl-10 pr-8 py-3 bg-slate-800 border-2 border-cyan-500/40 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 appearance-none cursor-pointer min-w-[200px] shadow-lg"
-                >
-                  {POPULAR_CITIES.map(city => (
-                    <option key={city.name} value={city.name} className="bg-slate-800 text-white">
-                      {city.name}, {city.country}
-                    </option>
-                  ))}
-                </select>
-                <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-400 rotate-90 pointer-events-none" />
-              </div>
-
-              <button
-                onClick={() => selectedCity && fetchForecast(selectedCity)}
-                disabled={loading || !selectedCity}
-                className="p-3 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 rounded-xl text-cyan-400 transition-colors"
-              >
-                <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-              </button>
+            <div className="w-full max-w-md">
+               <CitySearch 
+                  onCitySelect={handleSearchSelect} 
+                  initialValue={selectedCity?.name}
+                  className="w-full"
+               />
             </div>
           </div>
         </motion.div>

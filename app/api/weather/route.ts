@@ -1,16 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getBalkanWeather, getCityWeather } from '@/lib/api/weather';
+import { getBalkanWeather } from '@/lib/api/weather';
 import { translateWeatherDescription } from '@/lib/utils/weather-translations';
 import { calculateAQI } from '@/lib/utils/aqi';
+import { BALKAN_COUNTRIES } from '@/lib/api/balkan-countries';
 
 const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const city = searchParams.get('city');
-  const lat = searchParams.get('lat');
-  const lon = searchParams.get('lon');
+  let lat = searchParams.get('lat');
+  let lon = searchParams.get('lon');
   
+  // If city is provided but no coordinates, try to find them
+  if (city && (!lat || !lon)) {
+    // 1. Try to find in local database
+    let found = false;
+    for (const country of Object.values(BALKAN_COUNTRIES)) {
+      const cityData = country.cities.find(c => c.name.toLowerCase() === city.toLowerCase());
+      if (cityData) {
+        lat = cityData.lat.toString();
+        lon = cityData.lon.toString();
+        found = true;
+        break;
+      }
+    }
+
+    // 2. If not found, try Geocoding API
+    if (!found && OPENWEATHER_API_KEY) {
+      try {
+        const geoResponse = await fetch(
+          `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(city)}&limit=1&appid=${OPENWEATHER_API_KEY}`
+        );
+        if (geoResponse.ok) {
+          const geoData = await geoResponse.json();
+          if (geoData.length > 0) {
+            lat = geoData[0].lat.toString();
+            lon = geoData[0].lon.toString();
+          }
+        }
+      } catch (e) {
+        console.error('Geocoding error:', e);
+      }
+    }
+  }
+
   // Validacija koordinata
   if (lat && lon) {
     const latNum = parseFloat(lat);
@@ -25,7 +59,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // If lat/lon provided, fetch directly from OpenWeather
+    // If lat/lon provided (or resolved from city), fetch directly from OpenWeather
     if (lat && lon) {
       const response = await fetch(
         `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric&lang=en`,
@@ -121,23 +155,10 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    if (city) {
-      // Get weather for specific city
-      const weather = await getCityWeather(city);
-      
-      if (!weather) {
-        return NextResponse.json(
-          { error: 'City not found or weather data unavailable' },
-          { status: 404 }
-        );
-      }
+    // Fallback for home page list (no specific city/coords)
+    const weather = await getBalkanWeather();
+    return NextResponse.json(weather);
 
-      return NextResponse.json(weather);
-    } else {
-      // Get weather for all Balkan cities
-      const weather = await getBalkanWeather();
-      return NextResponse.json(weather);
-    }
   } catch (error) {
     console.error('Weather API error:', error);
     return NextResponse.json(

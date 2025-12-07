@@ -116,50 +116,79 @@ export default function CityPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
-  
-  // Pronađi grad iz POPULAR_CITIES
-  const cityInfo = POPULAR_CITIES.find(
-    c => c.name.toLowerCase() === citySlug || 
-         c.name.toLowerCase().replace(/\s+/g, '-') === citySlug
-  );
-  
-  const fetchCityData = useCallback(async () => {
-    if (!cityInfo) {
+  const [resolvedCity, setResolvedCity] = useState<{ name: string; country: string; lat: number; lon: number } | null>(null);
+
+  // Resolve city from URL
+  useEffect(() => {
+    const resolveCity = async () => {
+      if (!citySlug) return;
+
+      // 1. Try POPULAR_CITIES
+      const popular = POPULAR_CITIES.find(
+        c => c.name.toLowerCase() === citySlug || 
+             c.name.toLowerCase().replace(/\s+/g, '-') === citySlug
+      );
+      
+      if (popular) {
+        setResolvedCity(popular);
+        return;
+      }
+
+      // 2. Try Geocoding
+      try {
+        const res = await fetch(`/api/geocoding?q=${encodeURIComponent(citySlug)}&limit=1`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.results && data.results.length > 0) {
+            const city = data.results[0];
+            setResolvedCity({
+              name: city.name,
+              country: city.country,
+              lat: city.lat,
+              lon: city.lon
+            });
+            return;
+          }
+        }
+      } catch (e) {
+        console.error("Geocoding error:", e);
+      }
+      
       setError('Grad nije pronađen');
       setIsLoading(false);
-      return;
-    }
+    };
+
+    resolveCity();
+  }, [citySlug]);
+  
+  const fetchCityData = useCallback(async () => {
+    if (!resolvedCity) return;
     
     setIsLoading(true);
     setError(null);
     
     try {
-      // Fetch weather data
-      const weatherRes = await fetch(
-        `/api/weather?lat=${cityInfo.lat}&lon=${cityInfo.lon}`
-      );
+      // Parallel fetch for better performance
+      const [weatherRes, forecastRes, aqiRes] = await Promise.all([
+        fetch(`/api/weather?lat=${resolvedCity.lat}&lon=${resolvedCity.lon}`),
+        fetch(`/api/forecast?lat=${resolvedCity.lat}&lon=${resolvedCity.lon}`),
+        fetch(`/api/air-quality?lat=${resolvedCity.lat}&lon=${resolvedCity.lon}`).catch(() => null)
+      ]);
       
       if (!weatherRes.ok) throw new Error('Greška pri učitavanju vremena');
       const weatherJson = await weatherRes.json();
       
-      // Fetch forecast
-      const forecastRes = await fetch(
-        `/api/forecast?lat=${cityInfo.lat}&lon=${cityInfo.lon}`
-      );
       const forecastJson = forecastRes.ok ? await forecastRes.json() : { daily: [] };
       
-      // Fetch AQI (optional)
+      // Process AQI
       let aqi: number | null = null;
-      try {
-        const aqiRes = await fetch(
-          `/api/air-quality?lat=${cityInfo.lat}&lon=${cityInfo.lon}`
-        );
-        if (aqiRes.ok) {
+      if (aqiRes && aqiRes.ok) {
+        try {
           const aqiJson = await aqiRes.json();
           aqi = aqiJson.aqi ?? aqiJson.data?.aqi ?? null;
+        } catch {
+          // Ignore JSON parse error
         }
-      } catch {
-        // AQI is optional
       }
       
       const weather: WeatherData | null = weatherJson.main ? {
@@ -191,10 +220,10 @@ export default function CityPage() {
         }));
       
       setCityData({
-        name: cityInfo.name,
-        country: cityInfo.country,
-        lat: cityInfo.lat,
-        lon: cityInfo.lon,
+        name: resolvedCity.name,
+        country: resolvedCity.country,
+        lat: resolvedCity.lat,
+        lon: resolvedCity.lon,
         weather,
         forecast,
         aqi,
@@ -207,32 +236,34 @@ export default function CityPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [cityInfo]);
+  }, [resolvedCity]);
   
   useEffect(() => {
-    fetchCityData();
-  }, [fetchCityData]);
+    if (resolvedCity) {
+      fetchCityData();
+    }
+  }, [resolvedCity, fetchCityData]);
   
   // Check favorite status
   useEffect(() => {
-    if (cityInfo) {
+    if (resolvedCity) {
       const stored = localStorage.getItem('weather_favorites');
       if (stored) {
         try {
           const favorites = JSON.parse(stored);
-          setIsFavorite(favorites.some((f: { name: string }) => f.name === cityInfo.name));
+          setIsFavorite(favorites.some((f: { name: string }) => f.name === resolvedCity.name));
         } catch {
           // ignore
         }
       }
     }
-  }, [cityInfo]);
+  }, [resolvedCity]);
   
   const toggleFavorite = () => {
-    if (!cityInfo) return;
+    if (!resolvedCity) return;
     
     const stored = localStorage.getItem('weather_favorites');
-    let favorites: { id: string; name: string }[] = [];
+    let favorites: { id: string; name: string; country: string; lat: number; lon: number }[] = [];
     
     try {
       favorites = stored ? JSON.parse(stored) : [];
@@ -240,13 +271,19 @@ export default function CityPage() {
       favorites = [];
     }
     
-    const exists = favorites.findIndex(f => f.name === cityInfo.name);
+    const exists = favorites.findIndex(f => f.name === resolvedCity.name);
     
     if (exists >= 0) {
       favorites.splice(exists, 1);
       setIsFavorite(false);
     } else {
-      favorites.push({ id: cityInfo.name.toLowerCase(), name: cityInfo.name });
+      favorites.push({ 
+        id: resolvedCity.name.toLowerCase(), 
+        name: resolvedCity.name,
+        country: resolvedCity.country,
+        lat: resolvedCity.lat,
+        lon: resolvedCity.lon
+      });
       setIsFavorite(true);
     }
     

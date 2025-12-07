@@ -17,6 +17,7 @@ import {
   Activity,
 } from "lucide-react";
 import Link from "next/link";
+import CitySearch, { SearchResult } from "@/components/common/CitySearch";
 import { POPULAR_CITIES } from "@/lib/api/balkan-countries";
 import { AirQualityData } from "@/lib/types/weather";
 import { getAQIColor, getAQIBg, getAQILabel } from "@/components/weather/weather-utils";
@@ -69,14 +70,18 @@ const getHealthRecommendations = (aqi: number): string[] => {
 };
 
 export default function KvalitetVazduhaPage() {
-  const [selectedCity, setSelectedCity] = useState<typeof POPULAR_CITIES[0] | undefined>(POPULAR_CITIES[0]);
+  const [selectedCity, setSelectedCity] = useState<SearchResult | undefined>(POPULAR_CITIES[0]);
   const [airQuality, setAirQuality] = useState<AirQualityData | null>(null);
   const [allCitiesAqi, setAllCitiesAqi] = useState<{ name: string; country: string; aqi: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
   const { isFavorite, toggleFavorite } = useFavorites();
 
-  const fetchAirQuality = async (city: typeof POPULAR_CITIES[0]) => {
+  const handleSearchSelect = (city: SearchResult) => {
+    setSelectedCity(city);
+  };
+
+  const fetchAirQuality = async (city: SearchResult) => {
     setLoading(true);
 
     try {
@@ -150,8 +155,11 @@ export default function KvalitetVazduhaPage() {
     if (selectedCity) {
       fetchAirQuality(selectedCity);
     }
-    fetchAllCitiesAqi();
   }, [selectedCity]);
+
+  useEffect(() => {
+    fetchAllCitiesAqi();
+  }, []);
 
   const pollutants = airQuality ? [
     { name: "PM2.5", value: airQuality.pm25, unit: "µg/m³", max: 75, desc: "Fine čestice" },
@@ -190,34 +198,13 @@ export default function KvalitetVazduhaPage() {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-4 bg-slate-900/50 p-2 rounded-2xl border border-slate-800/50 backdrop-blur-xl"
+            className="w-full max-w-md"
           >
-            <div className="relative">
-              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500 pointer-events-none" />
-              <select
-                value={selectedCity?.name ?? ''}
-                onChange={(e) => {
-                  const city = POPULAR_CITIES.find(c => c.name === e.target.value);
-                  if (city) setSelectedCity(city);
-                }}
-                className="pl-12 pr-10 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 appearance-none cursor-pointer min-w-[240px] transition-all hover:bg-slate-700/50"
-              >
-                {POPULAR_CITIES.map(city => (
-                  <option key={city.name} value={city.name} className="bg-slate-900 text-white">
-                    {city.name}, {city.country}
-                  </option>
-                ))}
-              </select>
-              <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 rotate-90 pointer-events-none" />
-            </div>
-
-            <button
-              onClick={() => selectedCity && fetchAirQuality(selectedCity)}
-              disabled={loading || !selectedCity}
-              className="p-3 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl text-emerald-400 transition-all active:scale-95"
-            >
-              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-            </button>
+            <CitySearch 
+              onCitySelect={handleSearchSelect}
+              initialValue={selectedCity?.name}
+              className="w-full"
+            />
           </motion.div>
         </div>
 

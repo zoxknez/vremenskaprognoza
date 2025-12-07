@@ -15,11 +15,12 @@ import {
   MapPin,
 } from 'lucide-react';
 
+import CitySearch, { SearchResult } from '@/components/common/CitySearch';
 import { POPULAR_CITIES } from '@/lib/api/balkan-countries';
 
-// Dynamically import Mapbox component with no SSR
-const MapboxComponent = dynamic(
-  () => import('@/components/map/MapboxComponent'),
+// Dynamically import Leaflet component with no SSR
+const LeafletMap = dynamic(
+  () => import('@/components/map/LeafletMap'),
   { 
     ssr: false,
     loading: () => (
@@ -33,8 +34,7 @@ const MapboxComponent = dynamic(
   }
 );
 
-// Mapbox token from environment
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+
 
 interface LocationData {
   id: string;
@@ -71,6 +71,15 @@ export default function MapPage() {
   const [activeLayer, setActiveLayer] = useState<MapLayer>('temperature');
   const [isLoading, setIsLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(true);
+  const [mapCenter, setMapCenter] = useState<[number, number] | undefined>(undefined);
+
+  // Safety timeout to prevent infinite loading screen
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 5000); // 5 seconds max wait time
+    return () => clearTimeout(timer);
+  }, []);
 
   // Fetch real weather data for all cities
   useEffect(() => {
@@ -137,39 +146,53 @@ export default function MapPage() {
     setSelectedLocation(location);
   }, []);
 
-  // Fallback if no Mapbox token
-  if (!MAPBOX_TOKEN) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <div className="min-h-screen flex flex-col items-center justify-center p-4">
-          <div className="text-center max-w-md">
-            <div className="w-16 h-16 mx-auto mb-4 bg-yellow-500/10 rounded-full flex items-center justify-center">
-              <MapPin className="w-8 h-8 text-yellow-500" />
-            </div>
-            <h1 className="text-2xl font-bold text-white mb-2">Mapa nije dostupna</h1>
-            <p className="text-slate-400 mb-6">
-              Mapbox API ključ nije konfigurisan. Postavite NEXT_PUBLIC_MAPBOX_TOKEN u environment varijable.
-            </p>
-            <Link 
-              href="/" 
-              className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg transition-colors"
-            >
-              <ArrowLeft size={18} />
-              Nazad na početnu
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleSearchSelect = async (city: SearchResult) => {
+    // Check if city already exists in locations
+    const existing = locations.find(l => l.name === city.name);
+    if (existing) {
+      setMapCenter([existing.lat, existing.lng]);
+      setSelectedLocation(existing);
+      return;
+    }
+
+    // Fetch data for new city
+    setDataLoading(true);
+    try {
+      const response = await fetch(
+        `/api/weather?lat=${city.lat}&lon=${city.lon}&city=${encodeURIComponent(city.name)}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        const newLocation: LocationData = {
+          id: `search-${Date.now()}`,
+          name: city.name,
+          lat: city.lat,
+          lng: city.lon,
+          temp: Math.round(data.temperature),
+          aqi: data.aqi || 0,
+          humidity: data.humidity || 0,
+          windSpeed: Math.round((data.windSpeed || 0) * 3.6),
+        };
+        setLocations(prev => [...prev, newLocation]);
+        setMapCenter([city.lat, city.lon]);
+        setSelectedLocation(newLocation);
+      }
+    } catch (e) {
+      console.error("Error fetching city data", e);
+    } finally {
+      setDataLoading(false);
+    }
+  };
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <main className="h-screen flex flex-col pt-20">
         {/* Header */}
         <div className="absolute top-4 left-4 right-4 z-10 pointer-events-none">
-          <div className="max-w-7xl mx-auto flex items-center justify-between pointer-events-auto">
-            <div className="flex items-center gap-4 bg-slate-900/80 backdrop-blur-xl p-2 pr-6 rounded-2xl border border-slate-800/50 shadow-2xl">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between pointer-events-auto gap-4">
+            <div className="flex items-center gap-4 bg-slate-900/80 backdrop-blur-xl p-2 pr-6 rounded-2xl border border-slate-800/50 shadow-2xl w-full md:w-auto">
               <Link href="/" className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-colors">
                 <ArrowLeft size={20} />
               </Link>
@@ -179,8 +202,18 @@ export default function MapPage() {
               </div>
             </div>
 
+            {/* Search */}
+            <div className="w-full max-w-md">
+               <CitySearch 
+                  onCitySelect={handleSearchSelect} 
+                  className="w-full" 
+                  placeholder="Pronađi grad na mapi..."
+                  showLocateButton={false}
+               />
+            </div>
+
             {/* Layer Selector */}
-            <div className="flex items-center gap-1 bg-slate-900/80 backdrop-blur-xl p-1.5 rounded-2xl border border-slate-800/50 shadow-2xl">
+            <div className="flex items-center gap-1 bg-slate-900/80 backdrop-blur-xl p-1.5 rounded-2xl border border-slate-800/50 shadow-2xl overflow-x-auto max-w-full">
               {[
                 { id: 'temperature', icon: Thermometer, label: 'Temp' },
                 { id: 'aqi', icon: Wind, label: 'AQI' },
@@ -214,11 +247,12 @@ export default function MapPage() {
             </div>
           )}
 
-          <MapboxComponent 
+          <LeafletMap 
             locations={locations}
             activeLayer={activeLayer}
             onLocationSelect={handleLocationSelect}
             onLoaded={handleMapLoaded}
+            center={mapCenter}
           />
 
           {/* Data Loading Indicator */}

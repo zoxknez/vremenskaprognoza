@@ -301,3 +301,16 @@
   }
 }
 
+
+/* Leaflet Custom Popup */
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #334155;
+}
+.leaflet-popup-content {
+  margin: 0 !important;
+}
+.leaflet-container {
+  font-family: inherit !important;
+}
