@@ -97,7 +97,18 @@ export default function MapboxComponent({
       onLoaded();
     });
 
+    map.current.on('error', (e) => {
+      console.error('Mapbox error:', e);
+      onLoaded();
+    });
+
+    // Fallback timeout to ensure loading state is cleared
+    const timeoutId = setTimeout(() => {
+      onLoaded();
+    }, 3000);
+
     return () => {
+      clearTimeout(timeoutId);
       markers.current.forEach((marker) => marker.remove());
       map.current?.remove();
       map.current = null;

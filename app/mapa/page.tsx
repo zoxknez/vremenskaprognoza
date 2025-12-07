@@ -76,41 +76,38 @@ export default function MapPage() {
   useEffect(() => {
     const fetchAllCitiesData = async () => {
       setDataLoading(true);
-      const results: LocationData[] = [];
+      
+      // Process cities in batches to avoid rate limiting but speed up loading
+      const BATCH_SIZE = 5;
+      
+      for (let i = 0; i < MAP_CITIES.length; i += BATCH_SIZE) {
+        const batch = MAP_CITIES.slice(i, i + BATCH_SIZE);
+        
+        const batchPromises = batch.map(async (city) => {
+          try {
+            const response = await fetch(
+              `/api/weather?lat=${city.lat}&lon=${city.lng}&city=${encodeURIComponent(city.name)}`
+            );
 
-      for (const city of MAP_CITIES) {
-        try {
-          const response = await fetch(
-            `/api/weather?lat=${city.lat}&lon=${city.lng}&city=${encodeURIComponent(city.name)}`
-          );
-
-          if (response.ok) {
-            const data = await response.json();
-            results.push({
-              id: city.id,
-              name: city.name,
-              lat: city.lat,
-              lng: city.lng,
-              temp: Math.round(data.temperature || 20),
-              aqi: data.aqi || Math.floor(Math.random() * 100) + 30,
-              humidity: data.humidity || 60,
-              windSpeed: Math.round((data.windSpeed || 3) * 3.6),
-            });
-          } else {
-            // Fallback data
-            results.push({
-              id: city.id,
-              name: city.name,
-              lat: city.lat,
-              lng: city.lng,
-              temp: Math.floor(Math.random() * 15) + 15,
-              aqi: Math.floor(Math.random() * 100) + 30,
-              humidity: Math.floor(Math.random() * 30) + 50,
-              windSpeed: Math.floor(Math.random() * 20) + 5,
-            });
+            if (response.ok) {
+              const data = await response.json();
+              return {
+                id: city.id,
+                name: city.name,
+                lat: city.lat,
+                lng: city.lng,
+                temp: Math.round(data.temperature || 20),
+                aqi: data.aqi || Math.floor(Math.random() * 100) + 30,
+                humidity: data.humidity || 60,
+                windSpeed: Math.round((data.windSpeed || 3) * 3.6),
+              };
+            }
+          } catch (e) {
+            console.error(`Error fetching data for ${city.name}`, e);
           }
-        } catch {
-          results.push({
+          
+          // Fallback data
+          return {
             id: city.id,
             name: city.name,
             lat: city.lat,
@@ -119,11 +116,13 @@ export default function MapPage() {
             aqi: Math.floor(Math.random() * 100) + 30,
             humidity: Math.floor(Math.random() * 30) + 50,
             windSpeed: Math.floor(Math.random() * 20) + 5,
-          });
-        }
+          };
+        });
+
+        const batchResults = await Promise.all(batchPromises);
+        setLocations(prev => [...prev, ...batchResults]);
       }
 
-      setLocations(results);
       setDataLoading(false);
     };
 
@@ -215,13 +214,19 @@ export default function MapPage() {
             </div>
           )}
 
-          {!dataLoading && (
-            <MapboxComponent 
-              locations={locations}
-              activeLayer={activeLayer}
-              onLocationSelect={handleLocationSelect}
-              onLoaded={handleMapLoaded}
-            />
+          <MapboxComponent 
+            locations={locations}
+            activeLayer={activeLayer}
+            onLocationSelect={handleLocationSelect}
+            onLoaded={handleMapLoaded}
+          />
+
+          {/* Data Loading Indicator */}
+          {dataLoading && !isLoading && (
+            <div className="absolute top-4 right-4 z-20 bg-slate-900/80 backdrop-blur px-4 py-2 rounded-full text-sm text-slate-300 border border-slate-700 shadow-lg flex items-center gap-2">
+              <div className="w-3 h-3 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+              Učitavanje podataka...
+            </div>
           )}
 
           {/* Legend */}

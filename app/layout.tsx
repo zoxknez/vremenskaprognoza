@@ -4,6 +4,7 @@ import "./globals.css";
 import { Navigation } from "@/components/layout/Navigation";
 import { Footer } from "@/components/layout/Footer";
 import { Providers } from "@/components/providers/Providers";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -131,6 +132,7 @@ export default function RootLayout({
             </main>
             <Footer />
           </div>
+          <Analytics />
         </Providers>
       </body>
     </html>

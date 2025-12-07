@@ -57,6 +57,44 @@ export async function GET(request: NextRequest) {
       // Koristi centralizovanu AQI kalkulaciju
       const aqi = calculateAQI(pm25, pm10);
 
+      // Calculate dispersion
+      let dispersionStatus: 'good' | 'moderate' | 'poor' = 'moderate';
+      let dispersionReason = '';
+      let pollutionRisk: 'low' | 'medium' | 'high' = 'medium';
+      
+      const windSpeed = data.wind?.speed || 0;
+      const temp = data.main?.temp || 0;
+      const humidity = data.main?.humidity || 0;
+      const weatherDesc = (data.weather?.[0]?.description || '').toLowerCase();
+
+      if (windSpeed > 5) {
+        dispersionStatus = 'good';
+        dispersionReason = 'Jak vetar pomaže raspršivanju zagađivača';
+        pollutionRisk = 'low';
+      } else if (windSpeed < 2) {
+        dispersionStatus = 'poor';
+        dispersionReason = 'Slab vetar dovodi do nakupljanja zagađenja';
+        pollutionRisk = 'high';
+      }
+
+      if (temp < 5 && windSpeed < 3) {
+        dispersionStatus = 'poor';
+        dispersionReason = 'Hladnoća i slab vetar zadržavaju zagađenje pri tlu';
+        pollutionRisk = 'high';
+      }
+
+      if (humidity > 85 && windSpeed < 3) {
+        dispersionStatus = 'poor';
+        dispersionReason = 'Visoka vlažnost i slab vetar pogoduju stvaranju smoga';
+        pollutionRisk = 'high';
+      }
+
+      if (weatherDesc.includes('rain') || weatherDesc.includes('kiša')) {
+        dispersionStatus = 'good';
+        dispersionReason = 'Kiša ispire zagađivače iz atmosfere';
+        pollutionRisk = 'low';
+      }
+
       return NextResponse.json({
         city: city || data.name,
         country: data.sys?.country || 'RS',
@@ -72,8 +110,14 @@ export async function GET(request: NextRequest) {
         pm25: Math.round(pm25),
         pm10: Math.round(pm10),
         no2: Math.round(components.no2 || 0),
+        so2: Math.round(components.so2 || 0),
         o3: Math.round(components.o3 || 0),
         co: Math.round(components.co || 0),
+        dispersion: {
+          status: dispersionStatus,
+          reason: dispersionReason,
+          risk: pollutionRisk
+        }
       });
     }
     

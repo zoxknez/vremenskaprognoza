@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useI18n } from '@/lib/i18n/context';
 import {
   CloudSun,
   Menu,
@@ -23,16 +24,17 @@ import {
 } from 'lucide-react';
 
 const navLinks = [
-  { href: '/', label: 'Početna', icon: Home, description: 'Pregled vremena' },
-  { href: '/prognoza', label: 'Prognoza', icon: Cloud, description: '7-dnevna prognoza' },
-  { href: '/kvalitet-vazduha', label: 'Kvalitet Vazduha', icon: Wind, description: 'AQI i PM vrednosti' },
-  { href: '/mapa', label: 'Mapa', icon: Map, description: 'Interaktivna mapa' },
-  { href: '/statistika', label: 'Statistika', icon: BarChart3, description: 'Grafikoni i analize' },
-  { href: '/o-autoru', label: 'O Autoru', icon: User, description: 'Ko stoji iza projekta' },
-  { href: '/kontakt', label: 'Kontakt', icon: Mail, description: 'Pošaljite poruku' },
+  { href: '/', labelKey: 'nav.home', icon: Home, descKey: 'nav.desc.home' },
+  { href: '/prognoza', labelKey: 'nav.forecast', icon: Cloud, descKey: 'nav.desc.forecast' },
+  { href: '/kvalitet-vazduha', labelKey: 'nav.airQuality', icon: Wind, descKey: 'nav.desc.airQuality' },
+  { href: '/mapa', labelKey: 'nav.map', icon: Map, descKey: 'nav.desc.map' },
+  { href: '/statistika', labelKey: 'nav.statistics', icon: BarChart3, descKey: 'nav.desc.statistics' },
+  { href: '/o-autoru', labelKey: 'nav.about', icon: User, descKey: 'nav.desc.about' },
+  { href: '/kontakt', labelKey: 'nav.contact', icon: Mail, descKey: 'nav.desc.contact' },
 ];
 
 export function Navigation() {
+  const { t } = useI18n();
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -101,7 +103,7 @@ export function Navigation() {
                           : 'text-slate-400 hover:text-white hover:bg-white/5'
                         }`}
                     >
-                      {link.label}
+                      {t(link.labelKey)}
                       {isActive && (
                         <motion.div
                           layoutId="nav-indicator"
@@ -120,7 +122,7 @@ export function Navigation() {
                 <button 
                   onClick={() => setSearchOpen(true)}
                   className="p-2.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200"
-                  aria-label="Pretraga"
+                  aria-label={t('common.search')}
                 >
                   <Search size={20} />
                 </button>
@@ -137,7 +139,7 @@ export function Navigation() {
                 <button
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                   className="lg:hidden p-2.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200"
-                  aria-label={mobileMenuOpen ? 'Zatvori meni' : 'Otvori meni'}
+                  aria-label={mobileMenuOpen ? t('nav.menuClose') : t('nav.menuOpen')}
                 >
                   {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
                 </button>
@@ -171,7 +173,7 @@ export function Navigation() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Pretraži grad... (npr. London, Tokyo)"
+                    placeholder={t('nav.searchPlaceholder')}
                     className="flex-1 bg-transparent text-white placeholder-slate-500 outline-none text-lg"
                     autoFocus
                   />
@@ -185,7 +187,7 @@ export function Navigation() {
                 </div>
                 <div className="px-4 pb-4 pt-2 border-t border-slate-800">
                   <p className="text-xs text-slate-500">
-                    Pretražite bilo koji grad na svetu • Pritisnite Enter za pretragu
+                    {t('nav.searchHint')}
                   </p>
                 </div>
               </form>
@@ -247,10 +249,10 @@ export function Navigation() {
                           </div>
                           <div className="text-center">
                             <p className={`font-medium text-sm ${isActive ? 'text-white' : 'text-slate-300'}`}>
-                              {link.label}
+                              {t(link.labelKey)}
                             </p>
                             <p className="text-xs text-slate-500 mt-0.5">
-                              {link.description}
+                              {t(link.descKey)}
                             </p>
                           </div>
                         </Link>
@@ -260,7 +262,7 @@ export function Navigation() {
 
                   {/* Quick Actions */}
                   <div className="border-t border-slate-800 pt-4">
-                    <p className="text-xs text-slate-500 uppercase tracking-wider mb-3 px-1">Brze akcije</p>
+                    <p className="text-xs text-slate-500 uppercase tracking-wider mb-3 px-1">{t('nav.quickActions')}</p>
                     <div className="space-y-2">
                       <button
                         onClick={() => {
@@ -271,7 +273,7 @@ export function Navigation() {
                       >
                         <div className="flex items-center gap-3">
                           <Search className="w-5 h-5 text-slate-400" />
-                          <span className="text-slate-300">Pretraži gradove</span>
+                          <span className="text-slate-300">{t('nav.searchCities')}</span>
                         </div>
                         <ChevronRight className="w-5 h-5 text-slate-600" />
                       </button>
