@@ -31,7 +31,7 @@ interface LocationData {
   windSpeed: number;
 }
 
-type MapLayer = 'temperature' | 'aqi' | 'wind' | 'humidity';
+type MapLayer = 'temperature' | 'aqi' | 'wind' | 'humidity' | 'precipitation' | 'clouds';
 
 interface LeafletMapProps {
   locations: LocationData[];

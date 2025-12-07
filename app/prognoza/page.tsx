@@ -442,7 +442,7 @@ export default function ProgonzaPage() {
                       exit={{ opacity: 0, scale: 0.95, y: 10 }}
                       className="absolute right-0 top-full mt-2 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden"
                     >
-                      {typeof navigator !== 'undefined' && navigator.share && (
+                      {typeof navigator !== 'undefined' && 'share' in navigator && (
                         <button
                           onClick={() => handleShare('native')}
                           className="w-full flex items-center gap-3 px-4 py-3 text-left text-slate-300 hover:bg-slate-700/50 transition-colors"
