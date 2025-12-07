@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 
-const CACHE_NAME = 'air-quality-v2';
-const RUNTIME_CACHE = 'air-quality-runtime-v2';
+const CACHE_NAME = 'air-quality-v4';
+const RUNTIME_CACHE = 'air-quality-runtime-v4';
 
 // Resursi koji se keširaju pri instalaciji
 const PRECACHE_URLS = [
@@ -55,6 +55,11 @@ self.addEventListener('fetch', (event) => {
   // Preskoči non-GET zahteve
   if (request.method !== 'GET') return;
 
+  // Preskoči Vercel Analytics i druge interne rute koje ne treba keširati
+  if (url.pathname.startsWith('/_vercel/') || url.pathname.startsWith('/api/auth/')) {
+    return;
+  }
+
   // Preskoči cross-origin zahteve (osim API-ja)
   if (url.origin !== self.location.origin) {
     // Dozvoli externe API pozive ali bez keširanja
@@ -102,7 +107,10 @@ async function cacheFirst(request) {
     }
     return response;
   } catch (error) {
-    console.error('[SW] Cache-first failed:', error);
+    // Don't log errors for known blocked resources or analytics
+    if (!request.url.includes('_vercel') && !request.url.includes('google-analytics')) {
+      console.error('[SW] Cache-first failed:', error);
+    }
     throw error;
   }
 }

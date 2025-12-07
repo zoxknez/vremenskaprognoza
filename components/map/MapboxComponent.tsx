@@ -54,32 +54,43 @@ export default function MapboxComponent({
 
   // Dynamically import mapbox-gl only on client
   useEffect(() => {
-    import('mapbox-gl').then((mapbox) => {
-      const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
-      if (token) {
-        mapbox.default.accessToken = token;
-      }
-      
-      if (!mapbox.default.supported()) {
-        setError('Vaš pretraživač ne podržava WebGL koji je neophodan za prikaz mape.');
-        onLoaded();
-        return;
-      }
+    let mounted = true;
 
-      // Try to disable telemetry (may not work in all versions)
-      try {
-        const config = (mapbox.default as unknown as { config: Record<string, unknown> }).config;
-        if (config && typeof config === 'object') {
-          Object.defineProperty(config, 'EVENTS_URL', {
-            value: '',
-            writable: false
-          });
+    import('mapbox-gl')
+      .then((mapbox) => {
+        if (!mounted) return;
+
+        const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+        if (token) {
+          mapbox.default.accessToken = token;
         }
-      } catch {
-        // Telemetry disable not supported, ignore
-      }
-      setMapboxgl(mapbox);
-    });
+        
+        if (!mapbox.default.supported()) {
+          setError('Vaš pretraživač ne podržava WebGL koji je neophodan za prikaz mape.');
+          onLoaded();
+          return;
+        }
+
+        // Try to disable telemetry
+        try {
+          const config = (mapbox.default as unknown as { config: Record<string, unknown> }).config;
+          if (config && typeof config === 'object') {
+            Object.defineProperty(config, 'EVENTS_URL', { value: '', writable: false });
+          }
+        } catch { /* ignore */ }
+        
+        setMapboxgl(mapbox);
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        console.error('Failed to load mapbox-gl:', err);
+        setError('Neuspešno učitavanje Mapbox biblioteke. Proverite internet konekciju ili ad-blocker.');
+        onLoaded();
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, [onLoaded]);
 
   // Initialize map
