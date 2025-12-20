@@ -2,6 +2,7 @@
  * Email Notifications Service
  * Send email alerts for air quality changes
  */
+import { logger } from '@/lib/utils/logger';
 
 interface EmailOptions {
   to: string;

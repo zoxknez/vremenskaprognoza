@@ -2,6 +2,7 @@
  * Push Notifications Service
  * Web Push notifications for air quality alerts
  */
+import { logger } from '@/lib/utils/logger';
 
 // VAPID keys should be generated and stored in environment variables
 // You can generate them using: npx web-push generate-vapid-keys
