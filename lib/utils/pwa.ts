@@ -1,6 +1,8 @@
 /**
- * Utility funkcije za PWA update i verzionisanje
+ * PWA Utilities
+ * Helper functions za Service Workers i cache management
  */
+import { logger } from '@/lib/utils/logger';
 
 /**
  * Dohvata trenutnu verziju aplikacije iz package.json

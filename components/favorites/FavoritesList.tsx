@@ -1,11 +1,11 @@
 'use client';
 
-import { useFavorites, useFavoriteData } from '@/lib/hooks/useFavorites';
+import { useFavorites } from '@/hooks/useFavorites';
 import { AirQualityData, AQI_COLORS } from '@/lib/types/air-quality';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
-import { Star, Trash2, GripVertical, MapPin, ExternalLink } from 'lucide-react';
+import { Star, Trash2, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
 interface FavoritesListProps {
@@ -13,18 +13,7 @@ interface FavoritesListProps {
 }
 
 export function FavoritesList({ data }: FavoritesListProps) {
-  const { favorites, removeFavorite, clearFavorites, isLoaded } = useFavorites();
-  const favoriteData = useFavoriteData(data, favorites);
-
-  if (!isLoaded) {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-center text-muted-foreground">Učitavanje...</div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const { favorites, isFavorite } = useFavorites();
 
   if (favorites.length === 0) {
     return (
@@ -54,78 +43,26 @@ export function FavoritesList({ data }: FavoritesListProps) {
             <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
             Sačuvane lokacije ({favorites.length})
           </CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearFavorites}
-            className="text-muted-foreground hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Očisti sve
-          </Button>
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {favorites.map((favorite, index) => {
-            const stationData = favoriteData.find((d) => d.id === favorite.id);
-            const colors = stationData
-              ? AQI_COLORS[stationData.aqiCategory]
-              : AQI_COLORS.moderate;
-
-            return (
-              <div
-                key={favorite.id}
-                className={cn(
-                  'flex items-center justify-between p-3 rounded-lg border',
-                  stationData ? colors.bg : 'bg-muted/50',
-                  stationData ? colors.border : ''
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-                  <div>
-                    <div className="font-medium flex items-center gap-2">
-                      {favorite.name}
-                      <Link
-                        href={`/dashboard/location/${favorite.id}`}
-                        className="text-muted-foreground hover:text-primary"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                      </Link>
-                    </div>
-                    <div className="text-sm text-muted-foreground flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {favorite.city}, {favorite.region}
-                    </div>
+          {favorites.map((favorite) => (
+            <div
+              key={favorite.name}
+              className="flex items-center justify-between p-3 rounded-lg border bg-muted/50"
+            >
+              <div className="flex items-center gap-3">
+                <div>
+                  <div className="font-medium">{favorite.name}</div>
+                  <div className="text-sm text-muted-foreground flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {favorite.country}
                   </div>
                 </div>
-
-                <div className="flex items-center gap-4">
-                  {stationData ? (
-                    <div className="text-right">
-                      <div className={cn('text-2xl font-bold', colors.text)}>
-                        {stationData.aqi}
-                      </div>
-                      <div className="text-xs text-muted-foreground">AQI</div>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-muted-foreground">
-                      Nema podataka
-                    </div>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeFavorite(favorite.id)}
-                    className="text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>
@@ -144,8 +81,17 @@ export function FavoriteButton({
   size = 'default',
   showLabel = false,
 }: FavoriteButtonProps) {
-  const { isFavorite, toggleFavorite, canAddMore } = useFavorites();
-  const isCurrentlyFavorite = isFavorite(data.id);
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const isCurrentlyFavorite = isFavorite(data.location.name);
+
+  const handleToggle = () => {
+    toggleFavorite({
+      name: data.location.name,
+      lat: data.location.coordinates[1],
+      lon: data.location.coordinates[0],
+      country: data.location.country || 'RS',
+    });
+  };
 
   return (
     <Button
@@ -153,9 +99,8 @@ export function FavoriteButton({
       size={size}
       onClick={(e) => {
         e.stopPropagation();
-        toggleFavorite(data);
+        handleToggle();
       }}
-      disabled={!isCurrentlyFavorite && !canAddMore}
       className={cn(
         isCurrentlyFavorite
           ? 'text-yellow-500 hover:text-yellow-600'
