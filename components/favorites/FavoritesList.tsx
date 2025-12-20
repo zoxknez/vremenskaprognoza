@@ -89,7 +89,7 @@ export function FavoriteButton({
       name: data.location.name,
       lat: data.location.coordinates[1],
       lon: data.location.coordinates[0],
-      country: data.location.country || 'RS',
+      country: data.location.city,
     });
   };
 
