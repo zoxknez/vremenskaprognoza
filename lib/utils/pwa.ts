@@ -133,9 +133,9 @@ export async function clearAllCaches(): Promise<void> {
     await Promise.all(
       cacheNames.map(name => window.caches.delete(name))
     );
-    console.log('All caches cleared');
+    logger.log('All caches cleared');
   } catch (error) {
-    console.error('Failed to clear caches:', error);
+    logger.error('Failed to clear caches:', error);
   }
 }
 
@@ -150,12 +150,12 @@ export async function unregisterServiceWorker(): Promise<boolean> {
     const registration = await navigator.serviceWorker.getRegistration();
     if (registration) {
       const success = await registration.unregister();
-      console.log('Service Worker unregistered:', success);
+      logger.log('Service Worker unregistered:', success);
       return success;
     }
     return false;
   } catch (error) {
-    console.error('Failed to unregister SW:', error);
+    logger.error('Failed to unregister SW:', error);
     return false;
   }
 }

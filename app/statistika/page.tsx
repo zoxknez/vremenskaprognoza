@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { PageErrorBoundary } from '@/components/common/PageErrorBoundary';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import {
@@ -106,8 +107,14 @@ const records = [
   { label: 'Najviše padavina (dan)', value: '89mm', date: '2. Jun 2022', trend: 'up' },
 ];
 
-export default function StatisticsPage() {
-  const [selectedCity, setSelectedCity] = useState<SearchResult>(POPULAR_CITIES[0]);
+export default function StatisticsPage() {  return (
+    <PageErrorBoundary pageName="Statistika">
+      <StatistikaContent />
+    </PageErrorBoundary>
+  );
+}
+
+function StatistikaContent() {  const [selectedCity, setSelectedCity] = useState<SearchResult>(POPULAR_CITIES[0]);
   const [dateRange, setDateRange] = useState<string>('1y');
   const [dataType, setDataType] = useState<'temperature' | 'aqi' | 'precipitation'>('temperature');
   const [showExportMenu, setShowExportMenu] = useState(false);

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchAllAirQualityData } from '@/lib/api/aggregate';
 import { calculateAQI } from '@/lib/utils/aqi';
+import { getApiKey } from '@/lib/config/env';
 
-const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
+const OPENWEATHER_API_KEY = getApiKey('openweather');
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;

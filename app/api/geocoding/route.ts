@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getApiKey } from '@/lib/config/env';
+import { handleAPIError, createErrorResponse } from '@/lib/utils/api-error';
 
-const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
+const OPENWEATHER_API_KEY = getApiKey('openweather');
 
 export interface GeocodingResult {
   name: string;
@@ -102,10 +104,8 @@ export async function GET(request: NextRequest) {
       count: results.length,
     });
   } catch (error) {
-    console.error('Geocoding API error:', error);
-    return NextResponse.json(
-      { error: 'Failed to search for cities' },
-      { status: 500 }
-    );
+    const apiError = handleAPIError(error, 'GeocodingAPI');
+    const errorResponse = createErrorResponse(apiError);
+    return NextResponse.json(errorResponse, { status: apiError.statusCode });
   }
 }

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getApiKey } from '@/lib/config/env';
+import { handleAPIError, createErrorResponse } from '@/lib/utils/api-error';
 
-const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
+const OPENWEATHER_API_KEY = getApiKey('openweather');
 
 // Prevodi vremenske opise na srpski latinica
 const weatherTranslations: Record<string, string> = {
@@ -137,10 +139,8 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Forecast API error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch forecast data' },
-      { status: 500 }
-    );
+    const apiError = handleAPIError(error, 'ForecastAPI');
+    const errorResponse = createErrorResponse(apiError);
+    return NextResponse.json(errorResponse, { status: apiError.statusCode });
   }
 }

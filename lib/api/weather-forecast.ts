@@ -4,6 +4,7 @@
  */
 
 import { BALKAN_COUNTRIES } from './balkan-countries';
+import type { OpenWeatherOneCallResponse, OpenWeatherForecastResponse, OpenWeatherCurrent, OpenWeatherForecastItem, OpenWeatherHourly, OpenWeatherDaily, OpenWeatherAlert } from '@/lib/types/api-responses';
 
 // Detailed weather interfaces
 export interface CurrentWeather {
@@ -303,12 +304,17 @@ async function getFallbackWeather(
 
 // Parse One Call API data
 function parseOneCallData(
-  data: any,
+  data: OpenWeatherOneCallResponse,
   cityName: string,
   lat: number,
   lon: number
 ): ComprehensiveWeatherData {
   const current = data.current;
+  
+  // Fallback if current is undefined
+  if (!current) {
+    throw new Error('Missing current weather data from API');
+  }
   
   return {
     location: {
@@ -363,7 +369,7 @@ function parseOneCallData(
         current.pressure
       ),
     },
-    hourly: (data.hourly || []).slice(0, 48).map((hour: any) => ({
+    hourly: (data.hourly || []).slice(0, 48).map((hour: OpenWeatherHourly) => ({
       time: new Date(hour.dt * 1000).toISOString(),
       temperature: Math.round(hour.temp * 10) / 10,
       feelsLike: Math.round(hour.feels_like * 10) / 10,
@@ -381,7 +387,7 @@ function parseOneCallData(
       description: hour.weather[0]?.description || '',
       icon: hour.weather[0]?.icon || '01d',
     })),
-    daily: (data.daily || []).slice(0, 7).map((day: any, index: number) => {
+    daily: (data.daily || []).slice(0, 7).map((day: OpenWeatherDaily, index: number) => {
       const date = new Date(day.dt * 1000);
       const daysOfWeek = ['Nedjelja', 'Ponedjeljak', 'Utorak', 'Srijeda', 'Četvrtak', 'Petak', 'Subota'];
       
@@ -431,7 +437,7 @@ function parseOneCallData(
         summary: day.summary || day.weather[0]?.description || '',
       };
     }),
-    alerts: (data.alerts || []).map((alert: any) => ({
+    alerts: (data.alerts || []).map((alert: OpenWeatherAlert) => ({
       id: `alert-${alert.start}-${alert.event}`,
       event: alert.event,
       severity: alert.tags?.includes('Extreme') ? 'extreme' : 
@@ -454,8 +460,8 @@ function parseOneCallData(
 
 // Parse fallback 2.5 API data
 function parseFallbackData(
-  currentData: any,
-  forecastData: any,
+  currentData: OpenWeatherCurrent,
+  forecastData: OpenWeatherForecastResponse,
   cityName: string,
   lat: number,
   lon: number
@@ -464,7 +470,7 @@ function parseFallbackData(
   
   // Group forecast by day
   const dailyMap = new Map<string, any[]>();
-  forecastData.list.forEach((item: any) => {
+  forecastData.list.forEach((item: OpenWeatherForecastItem) => {
     const date = new Date(item.dt * 1000).toISOString().split('T')[0];
     if (!dailyMap.has(date)) {
       dailyMap.set(date, []);
@@ -577,7 +583,7 @@ function parseFallbackData(
         current.main.pressure
       ),
     },
-    hourly: forecastData.list.slice(0, 16).map((item: any) => ({
+    hourly: forecastData.list.slice(0, 16).map((item: OpenWeatherForecastItem) => ({
       time: new Date(item.dt * 1000).toISOString(),
       temperature: Math.round(item.main.temp * 10) / 10,
       feelsLike: Math.round(item.main.feels_like * 10) / 10,

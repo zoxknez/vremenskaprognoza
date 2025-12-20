@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";import { PageErrorBoundary } from '@/components/common/PageErrorBoundary';import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
   Clock,

@@ -7,7 +7,6 @@ import { fetchWAQIData } from './waqi';
 import { fetchOpenWeatherData } from './openweather';
 import { fetchAQICNData } from './aqicn';
 import { fetchAirVisualData } from './airvisual';
-import { getMockData } from './mock-data';
 
 export async function fetchAllAirQualityData(): Promise<AirQualityData[]> {
   const [
@@ -64,9 +63,10 @@ export async function fetchAllAirQualityData(): Promise<AirQualityData[]> {
     allData.push(...airVisualData.value);
   }
 
-  // If no data from APIs, use mock data for demonstration
+  // No data from APIs → return empty array
+  // UI će prikazati "Nema dostupnih podataka" umesto fake mock data
   if (allData.length === 0) {
-    return getMockData();
+    return [];
   }
 
   // Remove duplicates based on location (within 100m radius)

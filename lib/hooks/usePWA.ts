@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { logger } from '@/lib/utils/logger';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -55,7 +56,7 @@ export function usePWA() {
         .register('/sw.js')
         .then((reg) => {
           setRegistration(reg);
-          console.log('Service Worker registered');
+          logger.log('Service Worker registered');
 
           // Check for updates
           reg.addEventListener('updatefound', () => {
@@ -64,14 +65,14 @@ export function usePWA() {
               newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                   // New version available
-                  console.log('New version available');
+                  logger.log('New version available');
                 }
               });
             }
           });
         })
         .catch((error) => {
-          console.error('Service Worker registration failed:', error);
+          logger.error('Service Worker registration failed:', error);
         });
     }
 
@@ -98,7 +99,7 @@ export function usePWA() {
       setDeferredPrompt(null);
       return outcome === 'accepted';
     } catch (error) {
-      console.error('Install prompt error:', error);
+      logger.error('Install prompt error:', error);
       return false;
     }
   };
@@ -137,7 +138,7 @@ export function usePWA() {
       
       return subscription;
     } catch (error) {
-      console.error('Push subscription error:', error);
+      logger.error('Push subscription error:', error);
       return null;
     }
   };

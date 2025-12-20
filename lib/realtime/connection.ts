@@ -44,19 +44,19 @@ export class AirQualityRealtime {
       };
 
       this.eventSource.onerror = (error) => {
-        console.error('SSE error:', error);
+        logger.error('SSE error:', error);
         this.config.onError?.(new Error('SSE connection error'));
         this.handleReconnect();
       };
     } catch (error) {
-      console.error('Error creating EventSource:', error);
+      logger.error('Error creating EventSource:', error);
       this.handleReconnect();
     }
   }
 
   private handleReconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('Max reconnect attempts reached');
+      logger.error('Max reconnect attempts reached');
       this.config.onDisconnect?.();
       return;
     }
@@ -67,7 +67,7 @@ export class AirQualityRealtime {
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
     
     this.reconnectTimeout = setTimeout(() => {
-      console.log(`Reconnecting... Attempt ${this.reconnectAttempts}`);
+      logger.log(`Reconnecting... Attempt ${this.reconnectAttempts}`);
       this.connect();
     }, delay);
   }
@@ -121,7 +121,7 @@ export class AirQualityPolling {
       const data = await response.json();
       this.config.onData(data);
     } catch (error) {
-      console.error('Polling error:', error);
+      logger.error('Polling error:', error);
       this.config.onError?.(error as Error);
     }
   }

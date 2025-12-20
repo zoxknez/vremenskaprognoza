@@ -39,7 +39,7 @@ export async function sendPushNotification(
   const vapidEmail = process.env.VAPID_EMAIL || 'mailto:admin@example.com';
 
   if (!vapidPublicKey || !vapidPrivateKey) {
-    console.warn('VAPID keys not configured');
+    logger.warn('VAPID keys not configured');
     return false;
   }
 
@@ -58,7 +58,7 @@ export async function sendPushNotification(
 
     return response.ok;
   } catch (error) {
-    console.error('Push notification error:', error);
+    logger.error('Push notification error:', error);
     return false;
   }
 }

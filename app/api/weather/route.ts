@@ -3,8 +3,10 @@ import { getBalkanWeather } from '@/lib/api/weather';
 import { translateWeatherDescription } from '@/lib/utils/weather-translations';
 import { calculateAQI } from '@/lib/utils/aqi';
 import { BALKAN_COUNTRIES } from '@/lib/api/balkan-countries';
+import { getApiKey } from '@/lib/config/env';
+import { handleAPIError, createErrorResponse } from '@/lib/utils/api-error';
 
-const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
+const OPENWEATHER_API_KEY = getApiKey('openweather');
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -216,10 +218,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(weather);
 
   } catch (error) {
-    console.error('Weather API error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch weather data' },
-      { status: 500 }
-    );
+    const apiError = handleAPIError(error, 'WeatherAPI');
+    const errorResponse = createErrorResponse(apiError);
+    return NextResponse.json(errorResponse, { status: apiError.statusCode });
   }
 }
