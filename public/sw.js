@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 
-const CACHE_NAME = 'air-quality-v4';
-const RUNTIME_CACHE = 'air-quality-runtime-v4';
+const CACHE_NAME = 'air-quality-v5';
+const RUNTIME_CACHE = 'air-quality-runtime-v5';
 
 // Resursi koji se keširaju pri instalaciji
 const PRECACHE_URLS = [
@@ -45,6 +45,14 @@ self.addEventListener('activate', (event) => {
   );
   // Preuzmi kontrolu nad svim klijentima
   self.clients.claim();
+});
+
+// Slušaj za poruke od klijenta
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    // Aktiviraj novi service worker odmah
+    self.skipWaiting();
+  }
 });
 
 // Fetch strategije

@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Providers } from "@/components/providers/Providers";
 import { Analytics } from "@vercel/analytics/next";
 import { StructuredData } from "@/components/seo/StructuredData";
+import { PWAUpdatePrompt } from "@/components/pwa/PWAUpdatePrompt";
 import { Suspense } from "react";
 
 const inter = Inter({ 
@@ -138,6 +139,7 @@ export default function RootLayout({
           <Suspense fallback={null}>
             <Analytics />
           </Suspense>
+          <PWAUpdatePrompt />
         </Providers>
       </body>
     </html>
