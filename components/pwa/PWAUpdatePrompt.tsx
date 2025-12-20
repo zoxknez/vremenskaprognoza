@@ -82,73 +82,115 @@ export function PWAUpdatePrompt() {
   return (
     <AnimatePresence>
       {showUpdatePrompt && (
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 50 }}
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4"
-        >
-          <div className="glass-effect rounded-2xl border border-white/20 dark:border-white/10 shadow-2xl overflow-hidden">
-            {/* Header sa gradient-om */}
-            <div className="bg-gradient-to-r from-primary-500 to-accent-500 p-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                  <Sparkles className="w-5 h-5 text-white" />
+        <>
+          {/* Backdrop overlay za bolju vidljivost */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
+            onClick={handleDismiss}
+          />
+          
+          {/* Update notifikacija */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 50 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 50 }}
+            transition={{ type: 'spring', duration: 0.5 }}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] w-full max-w-lg px-4"
+          >
+            <div className="relative">
+              {/* Pulsing ring effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-accent-500 rounded-3xl blur-2xl opacity-30 animate-pulse" />
+              
+              {/* Main card */}
+              <div className="relative bg-white dark:bg-dark-900 rounded-3xl shadow-2xl border-2 border-primary-200 dark:border-primary-900 overflow-hidden">
+                {/* Animated gradient header */}
+                <div className="relative bg-gradient-to-r from-primary-500 via-accent-500 to-primary-500 bg-[length:200%_100%] animate-gradient p-6">
+                  <div className="flex items-start gap-4">
+                    <motion.div 
+                      className="p-3 bg-white/20 rounded-2xl backdrop-blur-sm"
+                      animate={{ rotate: [0, 10, -10, 0] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      <Sparkles className="w-7 h-7 text-white" />
+                    </motion.div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-white text-2xl mb-1">
+                        🎉 Nova verzija!
+                      </h3>
+                      <p className="text-white/95 text-base">
+                        Ažuriraj aplikaciju i uživaj u novim funkcijama
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleDismiss}
+                      className="p-2 hover:bg-white/20 rounded-xl transition-all hover:scale-110 active:scale-95"
+                      aria-label="Odbaci"
+                    >
+                      <X className="w-6 h-6 text-white" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-white text-lg">
-                    Nova verzija dostupna!
-                  </h3>
-                  <p className="text-white/90 text-sm mt-1">
-                    Ažuriraj aplikaciju za najbolje iskustvo
-                  </p>
+
+                {/* Content */}
+                <div className="p-6">
+                  <div className="space-y-3 mb-6">
+                    <motion.div 
+                      className="flex items-center gap-3 text-base"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 }}
+                    >
+                      <div className="w-2 h-2 bg-gradient-to-r from-green-400 to-green-500 rounded-full animate-pulse" />
+                      <span className="text-neutral-700 dark:text-neutral-200 font-medium">Novi features i poboljšanja</span>
+                    </motion.div>
+                    <motion.div 
+                      className="flex items-center gap-3 text-base"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full animate-pulse" />
+                      <span className="text-neutral-700 dark:text-neutral-200 font-medium">Brže performanse</span>
+                    </motion.div>
+                    <motion.div 
+                      className="flex items-center gap-3 text-base"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <div className="w-2 h-2 bg-gradient-to-r from-purple-400 to-purple-500 rounded-full animate-pulse" />
+                      <span className="text-neutral-700 dark:text-neutral-200 font-medium">Ispravljeni bug-ovi</span>
+                    </motion.div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <motion.button
+                      onClick={handleUpdate}
+                      disabled={isUpdating}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <RefreshCw className={`w-5 h-5 ${isUpdating ? 'animate-spin' : ''}`} />
+                      <span>{isUpdating ? 'Ažuriranje...' : 'Ažuriraj odmah'}</span>
+                    </motion.button>
+                    <motion.button
+                      onClick={handleDismiss}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="px-6 py-4 bg-neutral-100 dark:bg-dark-700 text-neutral-700 dark:text-neutral-300 rounded-2xl font-semibold text-lg hover:bg-neutral-200 dark:hover:bg-dark-600 transition-colors"
+                    >
+                      Kasnije
+                    </motion.button>
+                  </div>
                 </div>
-                <button
-                  onClick={handleDismiss}
-                  className="p-1 hover:bg-white/20 rounded-lg transition-colors"
-                  aria-label="Odbaci"
-                >
-                  <X className="w-5 h-5 text-white" />
-                </button>
               </div>
             </div>
-
-            {/* Content */}
-            <div className="p-4 bg-white/95 dark:bg-dark-800/95 backdrop-blur-sm">
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
-                  <div className="w-1.5 h-1.5 bg-primary-500 rounded-full" />
-                  <span>Novi features i poboljšanja</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
-                  <div className="w-1.5 h-1.5 bg-primary-500 rounded-full" />
-                  <span>Optimizacije performansi</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
-                  <div className="w-1.5 h-1.5 bg-primary-500 rounded-full" />
-                  <span>Bug fix-evi</span>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={handleUpdate}
-                  disabled={isUpdating}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-xl font-medium hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isUpdating ? 'animate-spin' : ''}`} />
-                  <span>{isUpdating ? 'Ažuriranje...' : 'Ažuriraj sada'}</span>
-                </button>
-                <button
-                  onClick={handleDismiss}
-                  className="px-4 py-2.5 bg-neutral-100 dark:bg-dark-700 text-neutral-700 dark:text-neutral-300 rounded-xl font-medium hover:bg-neutral-200 dark:hover:bg-dark-600 transition-colors"
-                >
-                  Kasnije
-                </button>
-              </div>
-            </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </>
       )}
     </AnimatePresence>
   );
