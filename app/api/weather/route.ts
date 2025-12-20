@@ -79,17 +79,23 @@ export async function GET(request: NextRequest) {
       );
       
       let aqiData = null;
+      let hasRealAQIData = false;
       if (aqiResponse.ok) {
         aqiData = await aqiResponse.json();
+        // Proveri da li zaista postoje podaci (ne samo default 0)
+        const components = aqiData?.list?.[0]?.components;
+        if (components && (components.pm2_5 > 0 || components.pm10 > 0 || components.no2 > 0)) {
+          hasRealAQIData = true;
+        }
       }
       
-      // Calculate AQI from components
+      // Calculate AQI from components SAMO ako postoje pravi podaci
       const components = aqiData?.list?.[0]?.components || {};
-      const pm25 = components.pm2_5 || 0;
-      const pm10 = components.pm10 || 0;
+      const pm25 = hasRealAQIData ? (components.pm2_5 || 0) : 0;
+      const pm10 = hasRealAQIData ? (components.pm10 || 0) : 0;
       
-      // Koristi centralizovanu AQI kalkulaciju
-      const aqi = calculateAQI(pm25, pm10);
+      // Koristi centralizovanu AQI kalkulaciju - vrati null ako nema podataka
+      const aqi = hasRealAQIData ? calculateAQI(pm25, pm10) : null;
 
       // Calculate dispersion
       let dispersionStatus: 'good' | 'moderate' | 'poor' = 'moderate';
@@ -140,18 +146,23 @@ export async function GET(request: NextRequest) {
         visibility: data.visibility,
         description: translateWeatherDescription(data.weather?.[0]?.description || 'Nije dostupno'),
         icon: data.weather?.[0]?.icon || '04d',
+        sunrise: data.sys?.sunrise,
+        sunset: data.sys?.sunset,
+        uvi: data.uvi || null,
+        // AQI podaci - null ako ne postoje pravi podaci
         aqi: aqi,
-        pm25: Math.round(pm25),
-        pm10: Math.round(pm10),
-        no2: Math.round(components.no2 || 0),
-        so2: Math.round(components.so2 || 0),
-        o3: Math.round(components.o3 || 0),
-        co: Math.round(components.co || 0),
-        dispersion: {
+        pm25: hasRealAQIData ? Math.round(pm25) : null,
+        pm10: hasRealAQIData ? Math.round(pm10) : null,
+        no2: hasRealAQIData ? Math.round(components.no2 || 0) : null,
+        so2: hasRealAQIData ? Math.round(components.so2 || 0) : null,
+        o3: hasRealAQIData ? Math.round(components.o3 || 0) : null,
+        co: hasRealAQIData ? Math.round(components.co || 0) : null,
+        hasAirQualityData: hasRealAQIData,
+        dispersion: hasRealAQIData ? {
           status: dispersionStatus,
           reason: dispersionReason,
           risk: pollutionRisk
-        }
+        } : null
       });
     }
     

@@ -571,7 +571,27 @@ export default function HomePage() {
             />
 
             <div className="space-y-4 sm:space-y-6 md:space-y-8">
-              <AirQualityCard data={weather} />
+              {/* Prikaži AQI SAMO ako postoje pravi podaci */}
+              {weather.aqi !== null && weather.aqi !== undefined && weather.aqi > 0 && (
+                <AirQualityCard data={weather} />
+              )}
+              
+              {/* Poruka ako nema AQI podataka */}
+              {(!weather.aqi || weather.aqi === 0) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-3xl bg-slate-800/30 border border-slate-700/50 backdrop-blur-xl p-6"
+                >
+                  <div className="flex items-center gap-3 text-slate-400">
+                    <Wind className="w-5 h-5" />
+                    <p className="text-sm">
+                      Nema dostupnih podataka o kvalitetu vazduha za ovu lokaciju.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+              
               {forecast.length > 0 && (
                 <HourlyForecast forecast={forecast} />
               )}
@@ -644,8 +664,8 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* Health Advice Card */}
-            {weather.aqi && (
+            {/* Health Advice Card - SAMO ako postoje AQI podaci */}
+            {weather.aqi && weather.aqi > 0 && (
               <div className="rounded-2xl bg-slate-800/30 border border-slate-700/50 p-5 sm:p-6">
                 <h3 className="text-sm font-medium text-slate-400 mb-4 flex items-center gap-2">
                   <Shield className="w-4 h-4 text-emerald-400" />
