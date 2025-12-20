@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, MapPin, Locate, ChevronRight, Globe, Loader2 } from 'lucide-react';
 import { POPULAR_CITIES } from '@/lib/api/balkan-countries';
 import { cn } from '@/lib/utils/cn';
+import { matchesSearch } from '@/lib/utils/transliteration';
 
 // Type for geocoding results
 interface GeocodingCity {
@@ -64,9 +65,9 @@ export default function CitySearch({
       return;
     }
 
-    // First, search local popular cities
+    // First, search local popular cities with transliteration support
     const localResults = POPULAR_CITIES.filter((city) =>
-      city.name.toLowerCase().includes(query.toLowerCase())
+      matchesSearch(city.name, query)
     ).map(city => ({ ...city, isLocal: true }));
 
     // Show local results immediately
@@ -123,8 +124,8 @@ export default function CitySearch({
   const handleManualSearch = async () => {
     if (!searchQuery) return;
 
-    // Check if it's a known city
-    const knownCity = POPULAR_CITIES.find(c => c.name.toLowerCase() === searchQuery.toLowerCase());
+    // Check if it's a known city (with transliteration support)
+    const knownCity = POPULAR_CITIES.find(c => matchesSearch(c.name, searchQuery));
     if (knownCity) {
       handleSearchSelect({ ...knownCity, isLocal: true });
       return;
