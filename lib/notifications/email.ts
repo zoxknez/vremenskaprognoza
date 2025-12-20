@@ -31,7 +31,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
     case 'smtp':
       return sendViaSMTP(options);
     default:
-      console.warn('No email provider configured');
+      logger.warn('No email provider configured');
       return false;
   }
 }
@@ -40,7 +40,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 async function sendViaResend(options: EmailOptions): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
-    console.warn('Resend API key not configured');
+    logger.warn('Resend API key not configured');
     return false;
   }
 
@@ -62,7 +62,7 @@ async function sendViaResend(options: EmailOptions): Promise<boolean> {
 
     return response.ok;
   } catch (error) {
-    console.error('Resend error:', error);
+    logger.error('Resend error:', error);
     return false;
   }
 }
@@ -71,7 +71,7 @@ async function sendViaResend(options: EmailOptions): Promise<boolean> {
 async function sendViaSendGrid(options: EmailOptions): Promise<boolean> {
   const apiKey = process.env.SENDGRID_API_KEY;
   if (!apiKey) {
-    console.warn('SendGrid API key not configured');
+    logger.warn('SendGrid API key not configured');
     return false;
   }
 
@@ -95,7 +95,7 @@ async function sendViaSendGrid(options: EmailOptions): Promise<boolean> {
 
     return response.ok;
   } catch (error) {
-    console.error('SendGrid error:', error);
+    logger.error('SendGrid error:', error);
     return false;
   }
 }

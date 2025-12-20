@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { SavedCity } from "@/lib/types/weather";
+import { logger } from "@/lib/utils/logger";
 
 export function useFavorites() {
     const [favorites, setFavorites] = useState<SavedCity[]>([]);
@@ -12,7 +13,7 @@ export function useFavorites() {
             try {
                 setFavorites(JSON.parse(stored));
             } catch (e) {
-                console.error("Failed to parse favorites", e);
+                logger.error("Failed to parse favorites", e);
             }
         }
     }, []);

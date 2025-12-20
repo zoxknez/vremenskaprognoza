@@ -2,6 +2,7 @@
 // WebSocket alternative that works well with Next.js
 
 import { AirQualityData } from '@/lib/types/air-quality';
+import { logger } from '@/lib/utils/logger';
 
 export interface RealtimeConfig {
   updateInterval: number; // in milliseconds
@@ -38,7 +39,7 @@ export class AirQualityRealtime {
           const data = JSON.parse(event.data);
           this.config.onData(data);
         } catch (error) {
-          console.error('Error parsing SSE data:', error);
+          logger.error('Error parsing SSE data:', error);
         }
       };
 

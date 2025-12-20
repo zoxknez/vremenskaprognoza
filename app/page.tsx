@@ -12,6 +12,7 @@ import HourlyForecast from "@/components/weather/HourlyForecast";
 import CityList from "@/components/weather/CityList";
 import { useFavorites } from "@/hooks/useFavorites";
 import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
+import { logger } from "@/lib/utils/logger";
 import {
   Map,
   BarChart3,
@@ -68,7 +69,7 @@ export default function HomePage() {
 
       // Check if geolocation is available
       if (!navigator.geolocation) {
-        console.log('Geolocation not supported');
+        logger.log('Geolocation not supported');
         setLocationPermission('unavailable');
         setSelectedCity(POPULAR_CITIES[0]);
         setIsLocating(false);
@@ -136,7 +137,7 @@ export default function HomePage() {
         if (geoError.code === 1) {
           setLocationPermission('denied');
         }
-        console.log('Location access denied or error:', geoError.message);
+        logger.log('Location access denied or error:', geoError.message);
         setSelectedCity(POPULAR_CITIES[0]);
       } finally {
         setIsLocating(false);
@@ -186,19 +187,23 @@ export default function HomePage() {
         `/api/forecast?lat=${city.lat}&lon=${city.lon}`
       ).then(res => res.json());
 
-      // Prepare other cities promises
-      const otherCityList = POPULAR_CITIES.filter(c => c.name !== city.name).slice(0, 6);
+      // Prepare other cities promises - samo gradovi sa podacima o zagađenosti
+      const otherCityList = POPULAR_CITIES.filter(c => c.name !== city.name).slice(0, 12);
       const otherCitiesPromise = Promise.all(otherCityList.map(async (otherCity) => {
         try {
           const res = await fetch(
             `/api/weather?lat=${otherCity.lat}&lon=${otherCity.lon}&city=${encodeURIComponent(otherCity.name)}`
           );
           const data = await res.json();
+          // Samo gradovi koji imaju validne AQI podatke
+          if (!data.aqi || data.aqi === 0) {
+            return null;
+          }
           return {
             name: otherCity.name,
             country: otherCity.country,
             temp: Math.round(data.temperature),
-            aqi: data.aqi || 0,
+            aqi: data.aqi,
             description: data.description,
           };
         } catch {
@@ -250,7 +255,9 @@ export default function HomePage() {
         setForecast(forecastData.hourly.slice(0, 24));
       }
 
-      setOtherCities(otherCitiesResults.filter((c): c is CityData => c !== null));
+      // Filtriraj samo gradove sa validnim AQI podacima i prikaži prvih 6
+      const citiesWithAQI = otherCitiesResults.filter((c): c is CityData => c !== null && c.aqi > 0).slice(0, 6);
+      setOtherCities(citiesWithAQI);
       setLoadingOtherCities(false);
 
     } catch (err) {

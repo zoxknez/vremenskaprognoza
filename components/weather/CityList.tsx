@@ -24,7 +24,7 @@ export default function CityList({ cities, onSelect }: CityListProps) {
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-semibold text-white flex items-center gap-2">
                         <MapPin className="w-5 h-5 text-cyan-400" />
-                        Balkanski Gradovi
+                        Gradovi sa Merenjima Zagađenosti
                     </h3>
                     <Link
                         href="/mapa"
@@ -61,12 +61,12 @@ export default function CityList({ cities, onSelect }: CityListProps) {
                                 </span>
                             </div>
                             <div className="flex items-center justify-between">
-                                <span className="text-2xl text-white font-light">
-                                    {city.temp}°
-                                </span>
-                                <div className={`text-sm font-medium ${getAQIColor(city.aqi)}`}>
+                                <div className={`text-2xl font-semibold ${getAQIColor(city.aqi)}`}>
                                     AQI {city.aqi}
                                 </div>
+                                <span className="text-lg text-slate-300 font-light">
+                                    {city.temp}°
+                                </span>
                             </div>
                             <p className="text-slate-400 text-xs mt-1 truncate">
                                 {city.description}

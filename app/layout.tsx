@@ -7,6 +7,7 @@ import { Providers } from "@/components/providers/Providers";
 import { Analytics } from "@vercel/analytics/next";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { PWAUpdatePrompt } from "@/components/pwa/PWAUpdatePrompt";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { Suspense } from "react";
 
 const inter = Inter({ 
@@ -132,7 +133,9 @@ export default function RootLayout({
           <div className="relative min-h-screen flex flex-col">
             <Navigation />
             <main id="main-content" className="flex-1">
-              {children}
+              <ErrorBoundary>
+                {children}
+              </ErrorBoundary>
             </main>
             <Footer />
           </div>

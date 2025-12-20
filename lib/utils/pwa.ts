@@ -33,7 +33,7 @@ export async function getCacheVersion(): Promise<string | null> {
     
     return null;
   } catch (error) {
-    console.error('Failed to get cache version:', error);
+    logger.error('Failed to get cache version:', error);
     return null;
   }
 }
@@ -114,7 +114,7 @@ export async function getServiceWorkerInfo() {
       scope: registration.scope,
     };
   } catch (error) {
-    console.error('Failed to get SW info:', error);
+    logger.error('Failed to get SW info:', error);
     return null;
   }
 }
