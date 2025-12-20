@@ -27,6 +27,7 @@ const navLinks = [
   { href: '/', labelKey: 'nav.home', icon: Home, descKey: 'nav.desc.home' },
   { href: '/prognoza', labelKey: 'nav.forecast', icon: Cloud, descKey: 'nav.desc.forecast' },
   { href: '/kvalitet-vazduha', labelKey: 'nav.airQuality', icon: Wind, descKey: 'nav.desc.airQuality' },
+  { href: '/stanice', labelKey: 'nav.stations', icon: Settings, descKey: 'nav.desc.stations' },
   { href: '/mapa', labelKey: 'nav.map', icon: Map, descKey: 'nav.desc.map' },
   { href: '/statistika', labelKey: 'nav.statistics', icon: BarChart3, descKey: 'nav.desc.statistics' },
   { href: '/o-autoru', labelKey: 'nav.about', icon: User, descKey: 'nav.desc.about' },

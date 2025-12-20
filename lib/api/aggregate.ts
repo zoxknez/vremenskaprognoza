@@ -3,8 +3,8 @@ import { fetchOpenAQData } from './openaq';
 import { fetchSensorCommunityData } from './sensor-community';
 import { fetchAllThingsTalkData } from './allthingstalk';
 import { fetchSEPAData } from './sepa';
-import { fetchWAQIData } from './waqi';
-import { fetchOpenWeatherData } from './openweather';
+import { fetchWAQIBalkanData } from './waqi-balkan';
+import { fetchOpenWeatherBalkanData } from './openweather-balkan';
 import { fetchAQICNData } from './aqicn';
 import { fetchAirVisualData } from './airvisual';
 
@@ -14,8 +14,8 @@ export async function fetchAllAirQualityData(): Promise<AirQualityData[]> {
     sensorCommunityData,
     allThingsTalkData,
     sepaData,
-    waqiData,
-    openWeatherData,
+    waqiBalkanData,
+    openWeatherBalkanData,
     aqicnData,
     airVisualData,
   ] = await Promise.allSettled([
@@ -23,8 +23,8 @@ export async function fetchAllAirQualityData(): Promise<AirQualityData[]> {
     fetchSensorCommunityData(),
     fetchAllThingsTalkData(process.env.ALLTHINGSTALK_TOKEN),
     fetchSEPAData(),
-    fetchWAQIData('Belgrade'),
-    fetchOpenWeatherData(),
+    fetchWAQIBalkanData(),
+    fetchOpenWeatherBalkanData(),
     fetchAQICNData(),
     fetchAirVisualData(),
   ]);
@@ -47,12 +47,12 @@ export async function fetchAllAirQualityData(): Promise<AirQualityData[]> {
     allData.push(...sepaData.value);
   }
 
-  if (waqiData.status === 'fulfilled') {
-    allData.push(...waqiData.value);
+  if (waqiBalkanData.status === 'fulfilled') {
+    allData.push(...waqiBalkanData.value);
   }
 
-  if (openWeatherData.status === 'fulfilled') {
-    allData.push(...openWeatherData.value);
+  if (openWeatherBalkanData.status === 'fulfilled') {
+    allData.push(...openWeatherBalkanData.value);
   }
 
   if (aqicnData.status === 'fulfilled') {
