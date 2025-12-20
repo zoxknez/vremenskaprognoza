@@ -10,6 +10,7 @@ import WeatherCard from "@/components/weather/WeatherCard";
 import AirQualityCard from "@/components/weather/AirQualityCard";
 import HourlyForecast from "@/components/weather/HourlyForecast";
 import CityList from "@/components/weather/CityList";
+import TemperatureCityList from "@/components/weather/TemperatureCityList";
 import { useFavorites } from "@/hooks/useFavorites";
 import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 import { logger } from "@/lib/utils/logger";
@@ -38,7 +39,8 @@ export default function HomePage() {
   const [selectedCity, setSelectedCity] = useState<{ name: string; lat: number; lon: number; country: string } | undefined>(undefined);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [forecast, setForecast] = useState<ForecastData[]>([]);
-  const [otherCities, setOtherCities] = useState<CityData[]>([]);
+  const [otherCities, setOtherCities] = useState<CityData[]>([]); // Gradovi sa kvalitetom vazduha
+  const [allCities, setAllCities] = useState<CityData[]>([]); // Svi gradovi sa temperaturom
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [, setLoadingOtherCities] = useState(true);
@@ -187,9 +189,29 @@ export default function HomePage() {
         `/api/forecast?lat=${city.lat}&lon=${city.lon}`
       ).then(res => res.json());
 
-      // Prepare other cities promises - samo gradovi sa podacima o zagađenosti
-      const otherCityList = POPULAR_CITIES.filter(c => c.name !== city.name).slice(0, 12);
-      const otherCitiesPromise = Promise.all(otherCityList.map(async (otherCity) => {
+      // 1. Učitaj SVE gradove za temperaturu (12 gradova)
+      const allCityList = POPULAR_CITIES.filter(c => c.name !== city.name).slice(0, 12);
+      const allCitiesPromise = Promise.all(allCityList.map(async (otherCity) => {
+        try {
+          const res = await fetch(
+            `/api/weather?lat=${otherCity.lat}&lon=${otherCity.lon}&city=${encodeURIComponent(otherCity.name)}`
+          );
+          const data = await res.json();
+          return {
+            name: otherCity.name,
+            country: otherCity.country,
+            temp: Math.round(data.temperature),
+            aqi: data.aqi || 0,
+            description: data.description,
+          };
+        } catch {
+          return null;
+        }
+      }));
+
+      // 2. Paralelno učitaj gradove sa kvalitetom vazduha (uzmi još 12 za veće šanse)
+      const aqiCityList = POPULAR_CITIES.filter(c => c.name !== city.name).slice(0, 18);
+      const aqiCitiesPromise = Promise.all(aqiCityList.map(async (otherCity) => {
         try {
           const res = await fetch(
             `/api/weather?lat=${otherCity.lat}&lon=${otherCity.lon}&city=${encodeURIComponent(otherCity.name)}`
@@ -212,10 +234,11 @@ export default function HomePage() {
       }));
 
       // Execute all requests in parallel
-      const [weatherData, forecastData, otherCitiesResults] = await Promise.all([
+      const [weatherData, forecastData, allCitiesResults, aqiCitiesResults] = await Promise.all([
         weatherPromise,
         forecastPromise,
-        otherCitiesPromise
+        allCitiesPromise,
+        aqiCitiesPromise
       ]);
 
       setWeather({
@@ -255,9 +278,15 @@ export default function HomePage() {
         setForecast(forecastData.hourly.slice(0, 24));
       }
 
-      // Filtriraj samo gradove sa validnim AQI podacima i prikaži prvih 6
-      const citiesWithAQI = otherCitiesResults.filter((c): c is CityData => c !== null && c.aqi > 0).slice(0, 6);
+      // Setuj obe liste:
+      // 1. Svi gradovi sa temperaturom (prvih 12 koji nisu null)
+      const validAllCities = allCitiesResults.filter((c): c is CityData => c !== null).slice(0, 12);
+      setAllCities(validAllCities);
+
+      // 2. Samo gradovi sa validnim AQI podacima (prvih 6)
+      const citiesWithAQI = aqiCitiesResults.filter((c): c is CityData => c !== null && c.aqi > 0).slice(0, 6);
       setOtherCities(citiesWithAQI);
+      
       setLoadingOtherCities(false);
 
     } catch (err) {
@@ -633,34 +662,53 @@ export default function HomePage() {
           </motion.div>
         )}
 
-        {/* Other Cities Section */}
+        {/* Cities Sections */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8 }}
-          className="pb-12 sm:pb-16 md:pb-20"
+          className="pb-12 sm:pb-16 md:pb-20 space-y-8"
         >
-          <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
-            <h2 className="text-xl sm:text-2xl font-display font-bold text-white whitespace-nowrap">Ostali Gradovi</h2>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
-          </div>
-          <CityList
-            cities={otherCities}
-            onSelect={(city: any) => {
-              const popularCity = POPULAR_CITIES.find(c => c.name === city.name);
-              if (popularCity) {
-                setSelectedCity(popularCity);
-              } else {
-                if (city.lat && city.lon) {
+          {/* Temperatura - Svi gradovi */}
+          <div>
+            <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-blue-700/50 to-transparent" />
+              <h2 className="text-xl sm:text-2xl font-display font-bold text-white whitespace-nowrap">Vremenska Prognoza</h2>
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-blue-700/50 to-transparent" />
+            </div>
+            <TemperatureCityList
+              cities={allCities}
+              onSelect={(city: any) => {
+                const popularCity = POPULAR_CITIES.find(c => c.name === city.name);
+                if (popularCity) {
+                  setSelectedCity(popularCity);
+                } else if (city.lat && city.lon) {
                   setSelectedCity(city);
-                } else {
-                  console.log("Selected city without coords:", city);
                 }
-              }
-            }}
-          />
+              }}
+            />
+          </div>
+
+          {/* Kvalitet vazduha - Samo gradovi sa AQI */}
+          <div>
+            <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-cyan-700/50 to-transparent" />
+              <h2 className="text-xl sm:text-2xl font-display font-bold text-white whitespace-nowrap">Kvalitet Vazduha</h2>
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-cyan-700/50 to-transparent" />
+            </div>
+            <CityList
+              cities={otherCities}
+              onSelect={(city: any) => {
+                const popularCity = POPULAR_CITIES.find(c => c.name === city.name);
+                if (popularCity) {
+                  setSelectedCity(popularCity);
+                } else if (city.lat && city.lon) {
+                  setSelectedCity(city);
+                }
+              }}
+            />
+          </div>
         </motion.div>
 
         {/* Trending / Stats Promo Section */}
