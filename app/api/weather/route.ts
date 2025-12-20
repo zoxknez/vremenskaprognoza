@@ -82,10 +82,55 @@ export async function GET(request: NextRequest) {
       let hasRealAQIData = false;
       if (aqiResponse.ok) {
         aqiData = await aqiResponse.json();
-        // Proveri da li zaista postoje podaci (ne samo default 0)
         const components = aqiData?.list?.[0]?.components;
-        if (components && (components.pm2_5 > 0 || components.pm10 > 0 || components.no2 > 0)) {
+        
+        // OpenWeather Air Pollution API vraća INTERPOLIRANE podatke čak i za mesta bez stanica!
+        // ODBACUJEMO SVE interpolirane podatke - prikazujemo SAMO podatke sa pravih mernih stanica
+        // Lista poznatih mernih stanica u Srbiji (OpenAQ, SEPA, itd.)
+        const KNOWN_STATIONS = [
+          { name: 'Beograd', lat: 44.8176, lon: 20.4633 },
+          { name: 'Novi Sad', lat: 45.2671, lon: 19.8335 },
+          { name: 'Niš', lat: 43.3209, lon: 21.8957 },
+          { name: 'Kragujevac', lat: 44.0128, lon: 20.9164 },
+          { name: 'Subotica', lat: 46.1000, lon: 19.6667 },
+          { name: 'Smederevo', lat: 44.6628, lon: 20.9269 },
+          { name: 'Pančevo', lat: 44.8738, lon: 20.6517 },
+          { name: 'Užice', lat: 43.8586, lon: 19.8425 },
+          { name: 'Valjevo', lat: 44.2747, lon: 19.8903 },
+          { name: 'Kraljevo', lat: 43.7257, lon: 20.6897 },
+        ];
+        
+        // Računamo udaljenost do najbliže poznate stanice (Haversine formula)
+        const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+          const R = 6371; // Radius Zemlje u km
+          const dLat = (lat2 - lat1) * Math.PI / 180;
+          const dLon = (lon2 - lon1) * Math.PI / 180;
+          const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          return R * c;
+        };
+        
+        const latNum = parseFloat(lat!);
+        const lonNum = parseFloat(lon!);
+        const distancesToStations = KNOWN_STATIONS.map(station => ({
+          ...station,
+          distance: calculateDistance(latNum, lonNum, station.lat, station.lon)
+        }));
+        
+        const nearestStation = distancesToStations.reduce((prev, curr) => 
+          prev.distance < curr.distance ? prev : curr
+        );
+        
+        // SAMO lokacije unutar 5km od poznate stanice imaju prave podatke
+        // Sve ostalo su interpolacije koje NE prikazujemo
+        if (nearestStation.distance <= 5) {
+          console.log(`✅ REAL DATA: ${city || `${lat},${lon}`} is ${nearestStation.distance.toFixed(1)}km from station ${nearestStation.name}`);
           hasRealAQIData = true;
+        } else {
+          console.log(`❌ FAKE DATA: ${city || `${lat},${lon}`} is ${nearestStation.distance.toFixed(1)}km from nearest station ${nearestStation.name} - SKIPPING AQI`);
+          hasRealAQIData = false;
         }
       }
       
