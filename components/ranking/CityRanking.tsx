@@ -41,7 +41,7 @@ export function CityRanking({ data }: CityRankingProps) {
     });
 
     // Izračunaj prosječne vrijednosti sa validacijom
-    const cities: RankedCity[] = Array.from(cityGroups.entries()).map(([, items]) => {
+    const cityData = Array.from(cityGroups.entries()).map(([, items]) => {
       // Filter valid AQI values
       const validItems = items.filter(i => 
         typeof i.aqi === 'number' && 
@@ -95,7 +95,9 @@ export function CityRanking({ data }: CityRankingProps) {
         stations: validItems.length,
         dataQuality,
       };
-    }).filter((city): city is RankedCity => city !== null);
+    });
+
+    const cities: RankedCity[] = cityData.filter((city): city is RankedCity => city !== null);
 
     // Sortiraj
     return cities.sort((a, b) => {
