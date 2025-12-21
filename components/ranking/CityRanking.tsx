@@ -16,13 +16,13 @@ interface RankedCity {
   region: string;
   aqi: number;
   averageAQI: number;
-  minAQI?: number;
-  maxAQI?: number;
+  minAQI: number;
+  maxAQI: number;
   trend: 'up' | 'down' | 'stable';
   pm25: number | undefined;
   pm10: number | undefined;
   stations: number;
-  dataQuality?: 'excellent' | 'good' | 'fair' | 'poor';
+  dataQuality: 'excellent' | 'good' | 'fair' | 'poor';
 }
 
 export function CityRanking({ data }: CityRankingProps) {

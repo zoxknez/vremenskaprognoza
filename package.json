@@ -9,6 +9,9 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
+    "validate": "npm run type-check",
+    "pre-push": "npm run type-check && npm run build",
+    "check": "npm run type-check",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
