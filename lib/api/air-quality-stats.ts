@@ -162,70 +162,115 @@ export function groupByCity(data: AirQualityData[]): Record<string, AirQualityDa
   return grouped;
 }
 
-// Get top N worst cities
-export function getWorstCities(data: AirQualityData[], limit = 10): Array<{
+export interface CityRankingData {
   name: string;
   country: string;
   aqi: number;
   averageAQI: number;
-}> {
+  minAQI: number;
+  maxAQI: number;
+  stationCount: number;
+  lastUpdated: string;
+  pm25?: number;
+  pm10?: number;
+  dataQuality: 'excellent' | 'good' | 'fair' | 'poor';
+}
+
+// Calculate data quality based on number of stations and data completeness
+function calculateDataQuality(stationCount: number, hasAllParams: boolean): CityRankingData['dataQuality'] {
+  if (stationCount >= 3 && hasAllParams) return 'excellent';
+  if (stationCount >= 2 || hasAllParams) return 'good';
+  if (stationCount >= 1) return 'fair';
+  return 'poor';
+}
+
+// Get comprehensive city rankings with validation
+export function getCityRankings(data: AirQualityData[]): CityRankingData[] {
   const cityGroups = groupByCity(data);
+  const now = new Date().toISOString();
   
-  const cityAverages = Object.entries(cityGroups).map(([city, stations]) => {
-    const validStations = stations.filter(s => typeof s.aqi === 'number' && !isNaN(s.aqi));
+  const cityRankings = Object.entries(cityGroups).map(([city, stations]) => {
+    // Filter out invalid stations
+    const validStations = stations.filter(s => 
+      typeof s.aqi === 'number' && 
+      !isNaN(s.aqi) && 
+      s.aqi > 0 && 
+      s.aqi < 500 // Reasonable upper limit
+    );
+    
     if (validStations.length === 0) return null;
 
-    const avgAQI = validStations.reduce((sum, s) => sum + s.aqi, 0) / validStations.length;
-    const maxAQI = Math.max(...validStations.map(s => s.aqi));
+    // Calculate statistics
+    const aqiValues = validStations.map(s => s.aqi);
+    const avgAQI = aqiValues.reduce((sum, val) => sum + val, 0) / aqiValues.length;
+    const minAQI = Math.min(...aqiValues);
+    const maxAQI = Math.max(...aqiValues);
+
+    // Calculate PM2.5 and PM10 averages if available
+    const pm25Values = validStations
+      .map(s => s.parameters?.pm25)
+      .filter((val): val is number => typeof val === 'number' && !isNaN(val));
+    const pm10Values = validStations
+      .map(s => s.parameters?.pm10)
+      .filter((val): val is number => typeof val === 'number' && !isNaN(val));
+
+    const avgPM25 = pm25Values.length > 0 
+      ? pm25Values.reduce((a, b) => a + b, 0) / pm25Values.length 
+      : undefined;
+    const avgPM10 = pm10Values.length > 0 
+      ? pm10Values.reduce((a, b) => a + b, 0) / pm10Values.length 
+      : undefined;
+
+    // Check data completeness
+    const hasAllParams = validStations.some(s => 
+      s.parameters?.pm25 !== undefined && 
+      s.parameters?.pm10 !== undefined
+    );
 
     return {
       name: city,
       country: validStations[0].location.region || 'Unknown',
-      aqi: maxAQI,
-      averageAQI: Math.round(avgAQI),
-    };
-  }).filter(Boolean) as Array<{
-    name: string;
-    country: string;
-    aqi: number;
-    averageAQI: number;
-  }>;
+      aqi: Math.round(avgAQI), // Use average for main AQI display
+      averageAQI: Math.round(avgAQI * 10) / 10, // More precise average
+      minAQI,
+      maxAQI,
+      stationCount: validStations.length,
+      lastUpdated: now,
+      pm25: avgPM25 ? Math.round(avgPM25 * 10) / 10 : undefined,
+      pm10: avgPM10 ? Math.round(avgPM10 * 10) / 10 : undefined,
+      dataQuality: calculateDataQuality(validStations.length, hasAllParams),
+    } as CityRankingData;
+  }).filter((city): city is CityRankingData => city !== null);
 
-  return cityAverages
-    .sort((a, b) => b.averageAQI - a.averageAQI)
+  return cityRankings;
+}
+
+// Get top N worst cities (most polluted)
+export function getWorstCities(data: AirQualityData[], limit = 10): CityRankingData[] {
+  const rankings = getCityRankings(data);
+  
+  return rankings
+    .sort((a, b) => {
+      // Primary sort by AQI (descending)
+      if (b.aqi !== a.aqi) return b.aqi - a.aqi;
+      // Secondary sort by data quality
+      const qualityScore = { excellent: 4, good: 3, fair: 2, poor: 1 };
+      return qualityScore[b.dataQuality] - qualityScore[a.dataQuality];
+    })
     .slice(0, limit);
 }
 
-// Get top N best cities
-export function getBestCities(data: AirQualityData[], limit = 10): Array<{
-  name: string;
-  country: string;
-  aqi: number;
-  averageAQI: number;
-}> {
-  const cityGroups = groupByCity(data);
+// Get top N best cities (cleanest air)
+export function getBestCities(data: AirQualityData[], limit = 10): CityRankingData[] {
+  const rankings = getCityRankings(data);
   
-  const cityAverages = Object.entries(cityGroups).map(([city, stations]) => {
-    const validStations = stations.filter(s => typeof s.aqi === 'number' && !isNaN(s.aqi) && s.aqi > 0);
-    if (validStations.length === 0) return null;
-
-    const avgAQI = validStations.reduce((sum, s) => sum + s.aqi, 0) / validStations.length;
-    const minAQI = Math.min(...validStations.map(s => s.aqi));
-
-    return {
-      name: city,
-      country: validStations[0].location.region || 'Unknown',
-      aqi: minAQI,
-      averageAQI: Math.round(avgAQI),
-    };
-  }).filter(Boolean) as Array<{
-    name: string;
-    country: string;
-    aqi: number;
-    averageAQI: number;
-  }>;
-
-  return cityAverages
-    .sort((a, b) => a.averageAQI - b.averageAQI)
+  return rankings
+    .sort((a, b) => {
+      // Primary sort by AQI (ascending)
+      if (a.aqi !== b.aqi) return a.aqi - b.aqi;
+      // Secondary sort by data quality
+      const qualityScore = { excellent: 4, good: 3, fair: 2, poor: 1 };
+      return qualityScore[b.dataQuality] - qualityScore[a.dataQuality];
+    })
     .slice(0, limit);
 }

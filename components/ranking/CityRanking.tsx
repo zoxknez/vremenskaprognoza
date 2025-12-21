@@ -15,10 +15,14 @@ interface RankedCity {
   name: string;
   region: string;
   aqi: number;
+  averageAQI: number;
+  minAQI?: number;
+  maxAQI?: number;
   trend: 'up' | 'down' | 'stable';
   pm25: number | undefined;
   pm10: number | undefined;
   stations: number;
+  dataQuality?: 'excellent' | 'good' | 'fair' | 'poor';
 }
 
 export function CityRanking({ data }: CityRankingProps) {
@@ -36,20 +40,51 @@ export function CityRanking({ data }: CityRankingProps) {
       cityGroups.get(key)!.push(item);
     });
 
-    // Izračunaj prosječne vrijednosti
+    // Izračunaj prosječne vrijednosti sa validacijom
     const cities: RankedCity[] = Array.from(cityGroups.entries()).map(([, items]) => {
-      const avgAqi = Math.round(items.reduce((acc, i) => acc + i.aqi, 0) / items.length);
-      const pm25Values = items.filter(i => i.parameters.pm25 !== undefined).map(i => i.parameters.pm25!);
-      const pm10Values = items.filter(i => i.parameters.pm10 !== undefined).map(i => i.parameters.pm10!);
+      // Filter valid AQI values
+      const validItems = items.filter(i => 
+        typeof i.aqi === 'number' && 
+        !isNaN(i.aqi) && 
+        i.aqi > 0 && 
+        i.aqi < 500
+      );
+      
+      if (validItems.length === 0) return null;
+      
+      const avgAqi = validItems.reduce((acc, i) => acc + i.aqi, 0) / validItems.length;
+      const minAqi = Math.min(...validItems.map(i => i.aqi));
+      const maxAqi = Math.max(...validItems.map(i => i.aqi));
+      
+      const pm25Values = validItems
+        .filter(i => i.parameters.pm25 !== undefined && !isNaN(i.parameters.pm25!))
+        .map(i => i.parameters.pm25!);
+      const pm10Values = validItems
+        .filter(i => i.parameters.pm10 !== undefined && !isNaN(i.parameters.pm10!))
+        .map(i => i.parameters.pm10!);
 
-      // Simuliraj trend (u pravoj aplikaciji bi se uspoređivalo sa prethodnim podacima)
-      const trends: ('up' | 'down' | 'stable')[] = ['up', 'down', 'stable'];
-      const trend = trends[Math.floor(Math.random() * 3)];
+      // Određivanje trenda na osnovu raspona vrednosti (ne random)
+      const aqiRange = maxAqi - minAqi;
+      const trend: 'up' | 'down' | 'stable' = 
+        aqiRange > 30 ? (avgAqi > (minAqi + maxAqi) / 2 ? 'up' : 'down') : 'stable';
+
+      // Data quality based on station count and parameter availability
+      let dataQuality: 'excellent' | 'good' | 'fair' | 'poor' = 'poor';
+      if (validItems.length >= 3 && pm25Values.length > 0 && pm10Values.length > 0) {
+        dataQuality = 'excellent';
+      } else if (validItems.length >= 2 || (pm25Values.length > 0 && pm10Values.length > 0)) {
+        dataQuality = 'good';
+      } else if (validItems.length >= 1) {
+        dataQuality = 'fair';
+      }
 
       return {
-        name: items[0].location.city,
-        region: items[0].location.region || '',
-        aqi: avgAqi,
+        name: validItems[0].location.city,
+        region: validItems[0].location.region || '',
+        aqi: Math.round(avgAqi),
+        averageAQI: Math.round(avgAqi * 10) / 10,
+        minAQI: minAqi,
+        maxAQI: maxAqi,
         trend,
         pm25: pm25Values.length > 0 
           ? Math.round(pm25Values.reduce((a, b) => a + b, 0) / pm25Values.length * 10) / 10 
@@ -57,9 +92,10 @@ export function CityRanking({ data }: CityRankingProps) {
         pm10: pm10Values.length > 0 
           ? Math.round(pm10Values.reduce((a, b) => a + b, 0) / pm10Values.length * 10) / 10 
           : undefined,
-        stations: items.length,
+        stations: validItems.length,
+        dataQuality,
       };
-    });
+    }).filter((city): city is RankedCity => city !== null);
 
     // Sortiraj
     return cities.sort((a, b) => {
@@ -90,47 +126,65 @@ export function CityRanking({ data }: CityRankingProps) {
 
   const RankingList = ({ cities, type }: { cities: RankedCity[], type: 'cleanest' | 'polluted' }) => (
     <div className="space-y-3">
-      {cities.map((city, index) => (
-        <div
-          key={`${city.name}-${city.region}`}
-          className="flex items-center gap-4 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-        >
-          <div className={`
-            w-8 h-8 rounded-full flex items-center justify-center font-bold text-white
-            ${type === 'cleanest' 
-              ? index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-amber-700' : 'bg-gray-600'
-              : 'bg-red-500'
-            }
-          `}>
-            {index + 1}
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold truncate">{city.name}</span>
-              {city.region && (
-                <Badge variant="outline" className="text-xs">
-                  {city.region}
-                </Badge>
-              )}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {city.stations} {city.stations === 1 ? 'stanica' : 'stanica'}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <TrendIcon trend={city.trend} />
-          </div>
-
+      {cities.map((city, index) => {
+        const qualityColor = 
+          city.dataQuality === 'excellent' ? 'text-green-500' :
+          city.dataQuality === 'good' ? 'text-blue-500' :
+          city.dataQuality === 'fair' ? 'text-yellow-500' : 'text-gray-500';
+        
+        return (
           <div
-            className="px-3 py-1 rounded-full text-white font-semibold text-sm"
-            style={{ backgroundColor: getAQIColor(city.aqi) }}
+            key={`${city.name}-${city.region}`}
+            className="flex items-center gap-4 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
           >
-            AQI {city.aqi}
+            <div className={`
+              w-8 h-8 rounded-full flex items-center justify-center font-bold text-white
+              ${type === 'cleanest' 
+                ? index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-amber-700' : 'bg-gray-600'
+                : 'bg-red-500'
+              }
+            `}>
+              {index + 1}
+            </div>
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold truncate">{city.name}</span>
+                {city.region && (
+                  <Badge variant="outline" className="text-xs">
+                    {city.region}
+                  </Badge>
+                )}
+                {city.dataQuality && (
+                  <span className={`text-xs ${qualityColor}`} title={`Kvalitet podataka: ${city.dataQuality}`}>
+                    {city.dataQuality === 'excellent' && '●●●'}
+                    {city.dataQuality === 'good' && '●●○'}
+                    {city.dataQuality === 'fair' && '●○○'}
+                    {city.dataQuality === 'poor' && '○○○'}
+                  </span>
+                )}
+              </div>
+              <div className="text-sm text-muted-foreground flex items-center gap-2">
+                <span>{city.stations} {city.stations === 1 ? 'stanica' : 'stanica'}</span>
+                {city.minAQI !== undefined && city.maxAQI !== undefined && city.minAQI !== city.maxAQI && (
+                  <span className="text-xs">({city.minAQI}-{city.maxAQI})</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <TrendIcon trend={city.trend} />
+            </div>
+
+            <div
+              className="px-3 py-1 rounded-full text-white font-semibold text-sm"
+              style={{ backgroundColor: getAQIColor(city.aqi) }}
+            >
+              AQI {city.aqi}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 

@@ -41,6 +41,8 @@ export default function HomePage() {
   const [forecast, setForecast] = useState<ForecastData[]>([]);
   const [otherCities, setOtherCities] = useState<CityData[]>([]); // Gradovi sa kvalitetom vazduha
   const [allCities, setAllCities] = useState<CityData[]>([]); // Svi gradovi sa temperaturom
+  const [topCleanCities, setTopCleanCities] = useState<any[]>([]); // Top 5 najčistijih
+  const [topPollutedCities, setTopPollutedCities] = useState<any[]>([]); // Top 5 najzagađenijih
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [, setLoadingOtherCities] = useState(true);
@@ -171,6 +173,26 @@ export default function HomePage() {
     const timer = setInterval(updateTime, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Funkcija za učitavanje top 5 gradova
+  const fetchTopCities = async () => {
+    try {
+      const [cleanResponse, pollutedResponse] = await Promise.all([
+        fetch('/api/air-quality/rankings?type=best&limit=5'),
+        fetch('/api/air-quality/rankings?type=worst&limit=5'),
+      ]);
+
+      if (cleanResponse.ok && pollutedResponse.ok) {
+        const cleanData = await cleanResponse.json();
+        const pollutedData = await pollutedResponse.json();
+        
+        setTopCleanCities(cleanData.rankings || []);
+        setTopPollutedCities(pollutedData.rankings || []);
+      }
+    } catch (error) {
+      console.error('Error fetching top cities:', error);
+    }
+  };
 
   const fetchWeatherData = async (city: { name: string; lat: number; lon: number; country: string }) => {
     setLoading(true);
@@ -320,6 +342,11 @@ export default function HomePage() {
       fetchWeatherData(selectedCity);
     }
   }, [selectedCity]);
+
+  // Učitaj top gradove pri prvom renderu
+  useEffect(() => {
+    fetchTopCities();
+  }, []);
 
   const handleSearchSelect = (city: SearchResult) => {
     const newCity = {
@@ -729,6 +756,161 @@ export default function HomePage() {
               }}
             />
           </div>
+
+          {/* TOP 5 Rangiranje Gradova */}
+          {(topCleanCities.length > 0 || topPollutedCities.length > 0) && (
+            <div>
+              <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-700/50 to-transparent" />
+                <h2 className="text-xl sm:text-2xl font-display font-bold text-white whitespace-nowrap">Rangiranje Gradova</h2>
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-700/50 to-transparent" />
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Top 5 Najčistijih */}
+                {topCleanCities.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    className="rounded-3xl bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/20 backdrop-blur-xl p-6"
+                  >
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="p-2 rounded-xl bg-green-500/20">
+                        <Sparkles className="w-5 h-5 text-green-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-white">Top 5 Najčistiji Gradovi</h3>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {topCleanCities.map((city, index) => (
+                        <motion.div
+                          key={city.name}
+                          initial={{ opacity: 0, y: 10 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: index * 0.1 }}
+                          className="flex items-center gap-4 p-3 rounded-xl bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/30 hover:border-green-500/30 transition-all cursor-pointer group"
+                          onClick={() => {
+                            const popularCity = POPULAR_CITIES.find(c => c.name === city.name);
+                            if (popularCity) setSelectedCity(popularCity);
+                          }}
+                        >
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white ${
+                            index === 0 ? 'bg-yellow-500' : 
+                            index === 1 ? 'bg-gray-400' : 
+                            index === 2 ? 'bg-amber-700' : 'bg-gray-600'
+                          }`}>
+                            {index + 1}
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-white truncate">{city.name}</span>
+                              {city.dataQuality && (
+                                <span className="text-xs text-green-400">
+                                  {city.dataQuality === 'excellent' && '●●●'}
+                                  {city.dataQuality === 'good' && '●●○'}
+                                  {city.dataQuality === 'fair' && '●○○'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-slate-400">
+                              {city.stationCount} {city.stationCount === 1 ? 'stanica' : 'stanica'}
+                            </div>
+                          </div>
+                          
+                          <div className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 font-semibold text-sm">
+                            AQI {city.aqi}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                    
+                    <Link
+                      href="/kvalitet-vazduha"
+                      className="mt-4 flex items-center justify-center gap-2 text-sm text-green-400 hover:text-green-300 transition-colors group"
+                    >
+                      Vidi sve gradove
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                  </motion.div>
+                )}
+                
+                {/* Top 5 Najzagađenijih */}
+                {topPollutedCities.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    className="rounded-3xl bg-gradient-to-br from-red-500/10 to-orange-500/5 border border-red-500/20 backdrop-blur-xl p-6"
+                  >
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="p-2 rounded-xl bg-red-500/20">
+                        <AlertTriangle className="w-5 h-5 text-red-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-white">Top 5 Najzagađeniji Gradovi</h3>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {topPollutedCities.map((city, index) => (
+                        <motion.div
+                          key={city.name}
+                          initial={{ opacity: 0, y: 10 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: index * 0.1 }}
+                          className="flex items-center gap-4 p-3 rounded-xl bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/30 hover:border-red-500/30 transition-all cursor-pointer group"
+                          onClick={() => {
+                            const popularCity = POPULAR_CITIES.find(c => c.name === city.name);
+                            if (popularCity) setSelectedCity(popularCity);
+                          }}
+                        >
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white bg-red-500">
+                            {index + 1}
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-white truncate">{city.name}</span>
+                              {city.dataQuality && (
+                                <span className="text-xs text-orange-400">
+                                  {city.dataQuality === 'excellent' && '●●●'}
+                                  {city.dataQuality === 'good' && '●●○'}
+                                  {city.dataQuality === 'fair' && '●○○'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-slate-400">
+                              {city.stationCount} {city.stationCount === 1 ? 'stanica' : 'stanica'}
+                            </div>
+                          </div>
+                          
+                          <div className={`px-3 py-1 rounded-full font-semibold text-sm ${
+                            city.aqi <= 50 ? 'bg-green-500/20 text-green-400' :
+                            city.aqi <= 100 ? 'bg-yellow-500/20 text-yellow-400' :
+                            city.aqi <= 150 ? 'bg-orange-500/20 text-orange-400' :
+                            city.aqi <= 200 ? 'bg-red-500/20 text-red-400' :
+                            'bg-purple-500/20 text-purple-400'
+                          }`}>
+                            AQI {city.aqi}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                    
+                    <Link
+                      href="/kvalitet-vazduha"
+                      className="mt-4 flex items-center justify-center gap-2 text-sm text-red-400 hover:text-red-300 transition-colors group"
+                    >
+                      Vidi sve gradove
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                  </motion.div>
+                )}
+              </div>
+            </div>
+          )}
         </motion.div>
 
         {/* Trending / Stats Promo Section */}

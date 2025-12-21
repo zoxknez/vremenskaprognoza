@@ -524,35 +524,48 @@ export default function KvalitetVazduhaPage() {
   };
 
   const fetchAllCitiesAqi = async () => {
-    // Use a subset of popular cities to avoid too many requests
-    const citiesToFetch = POPULAR_CITIES.sort(() => Math.random() - 0.5).slice(0, 12);
+    // Use the most relevant cities (major Balkan cities)
+    const citiesToFetch = POPULAR_CITIES.slice(0, 12);
 
     const promises = citiesToFetch.map(async (city) => {
       try {
         const response = await fetch(
-          `/api/air-quality?lat=${city.lat}&lon=${city.lon}`
+          `/api/air-quality?lat=${city.lat}&lon=${city.lon}`,
+          { 
+            method: 'GET',
+            cache: 'no-cache',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
         );
 
         if (response.ok) {
           const data = await response.json();
-          return {
-            name: city.name,
-            country: city.country,
-            aqi: data.aqi || Math.floor(Math.random() * 150) + 30,
-          };
+          // Only return if we have valid AQI data
+          if (data.aqi && typeof data.aqi === 'number' && data.aqi > 0 && data.aqi < 500) {
+            return {
+              name: city.name,
+              country: city.country,
+              aqi: Math.round(data.aqi),
+            };
+          }
         }
-      } catch {
-        // Ignore errors
+      } catch (error) {
+        console.error(`Failed to fetch AQI for ${city.name}:`, error);
       }
-      return {
-        name: city.name,
-        country: city.country,
-        aqi: Math.floor(Math.random() * 150) + 30,
-      };
+      // Return null for invalid data - will be filtered out
+      return null;
     });
 
-    const fetchedResults = await Promise.all(promises);
-    setAllCitiesAqi(fetchedResults.sort((a, b) => a.aqi - b.aqi));
+    const fetchedResults = (await Promise.all(promises))
+      .filter((result): result is { name: string; country: string; aqi: number } => result !== null)
+      .sort((a, b) => a.aqi - b.aqi);
+    
+    // Only update if we have at least some valid data
+    if (fetchedResults.length > 0) {
+      setAllCitiesAqi(fetchedResults);
+    }
   };
 
   useEffect(() => {
