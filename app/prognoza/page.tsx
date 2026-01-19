@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";import { PageErrorBoundary } from '@/components/common/PageErrorBoundary';import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useCallback } from "react"; import { PageErrorBoundary } from '@/components/common/PageErrorBoundary'; import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
   Clock,
@@ -79,13 +79,14 @@ const getWeatherIcon = (description: string, size: number = 32) => {
 
 // Temperature Chart Component
 function TemperatureChart({ data, type }: { data: HourlyForecast[] | DailyForecast[], type: 'hourly' | 'daily' }) {
-  const temps = type === 'hourly' 
+  const temps = type === 'hourly'
     ? (data as HourlyForecast[]).map(d => d.temp)
     : (data as DailyForecast[]).flatMap(d => [d.tempMax, d.tempMin]);
-  
+
   const maxTemp = Math.max(...temps);
   const minTemp = Math.min(...temps);
   const range = maxTemp - minTemp || 1;
+  const chartHeight = 100; // Fixed height in pixels
 
   if (type === 'hourly') {
     const hourlyData = data as HourlyForecast[];
@@ -95,32 +96,42 @@ function TemperatureChart({ data, type }: { data: HourlyForecast[] | DailyForeca
           <BarChart3 className="w-5 h-5 text-cyan-400" />
           Temperaturni grafikon (24h)
         </h3>
-        <div className="relative h-32">
+        <div className="relative" style={{ height: chartHeight + 32 }}>
           {/* Y-axis labels */}
-          <div className="absolute left-0 top-0 bottom-6 w-10 flex flex-col justify-between text-xs text-slate-500">
+          <div className="absolute left-0 top-0 w-10 flex flex-col justify-between text-xs text-slate-500" style={{ height: chartHeight }}>
             <span>{maxTemp}°</span>
             <span>{Math.round((maxTemp + minTemp) / 2)}°</span>
             <span>{minTemp}°</span>
           </div>
           {/* Chart */}
-          <div className="ml-12 h-full flex items-end gap-1">
+          <div className="ml-12 flex items-end gap-1" style={{ height: chartHeight }}>
             {hourlyData.slice(0, 24).map((hour, index) => {
-              const height = ((hour.temp - minTemp) / range) * 100;
+              const barHeight = Math.max(((hour.temp - minTemp) / range) * chartHeight, 5);
               const time = new Date(hour.time);
               return (
-                <div key={index} className="flex-1 flex flex-col items-center group">
-                  <div className="relative w-full flex justify-center mb-1">
-                    <div 
+                <div key={index} className="flex-1 flex flex-col items-center group" style={{ height: chartHeight }}>
+                  <div className="flex-1 relative w-full flex items-end justify-center">
+                    <div
                       className="w-full max-w-[20px] rounded-t-sm bg-gradient-to-t from-cyan-600 to-cyan-400 group-hover:from-cyan-500 group-hover:to-cyan-300 transition-all cursor-pointer"
-                      style={{ height: `${Math.max(height, 5)}%` }}
+                      style={{ height: barHeight }}
                     />
                     {/* Tooltip */}
                     <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 px-2 py-1 rounded text-xs text-white whitespace-nowrap z-10 pointer-events-none">
                       {hour.temp}° | {time.getHours()}:00
                     </div>
                   </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* X-axis labels */}
+          <div className="ml-12 flex gap-1 mt-1">
+            {hourlyData.slice(0, 24).map((hour, index) => {
+              const time = new Date(hour.time);
+              return (
+                <div key={index} className="flex-1 text-center">
                   {index % 4 === 0 && (
-                    <span className="text-[10px] text-slate-500 mt-1">{time.getHours()}h</span>
+                    <span className="text-[10px] text-slate-500">{time.getHours()}h</span>
                   )}
                 </div>
               );
@@ -155,14 +166,14 @@ function TemperatureChart({ data, type }: { data: HourlyForecast[] | DailyForeca
                 <div className="relative w-full flex justify-center gap-1 mb-1" style={{ height: '100px' }}>
                   {/* Max temp bar */}
                   <div className="flex flex-col justify-end h-full">
-                    <div 
+                    <div
                       className="w-4 rounded-t-sm bg-gradient-to-t from-red-600 to-red-400 group-hover:from-red-500 group-hover:to-red-300 transition-all cursor-pointer"
                       style={{ height: `${maxHeight}%` }}
                     />
                   </div>
                   {/* Min temp bar */}
                   <div className="flex flex-col justify-end h-full">
-                    <div 
+                    <div
                       className="w-4 rounded-t-sm bg-gradient-to-t from-blue-600 to-blue-400 group-hover:from-blue-500 group-hover:to-blue-300 transition-all cursor-pointer"
                       style={{ height: `${minHeight}%` }}
                     />
@@ -202,11 +213,11 @@ function ForecastSummary({ daily, hourly }: { daily: DailyForecast[], hourly: Ho
   const tempDiff = tomorrow.tempMax - today.tempMax;
   const isTomorrowWarmer = tempDiff > 0;
   const isTomorrowColder = tempDiff < 0;
-  
+
   // Find warmest and coldest days
   const warmestDay = daily.reduce((prev, curr) => curr.tempMax > prev.tempMax ? curr : prev, daily[0]);
   const coldestDay = daily.reduce((prev, curr) => curr.tempMin < prev.tempMin ? curr : prev, daily[0]);
-  
+
   // Check for rain in next 24h
   const rainExpected = hourly.slice(0, 24).some(h => h.pop > 50);
 
@@ -229,9 +240,9 @@ function ForecastSummary({ daily, hourly }: { daily: DailyForecast[], hourly: Ho
           <div>
             <p className="text-sm text-slate-400">Sutra</p>
             <p className={`font-semibold ${isTomorrowWarmer ? 'text-red-400' : isTomorrowColder ? 'text-blue-400' : 'text-white'}`}>
-              {isTomorrowWarmer ? `Toplije za ${Math.abs(tempDiff)}°` : 
-               isTomorrowColder ? `Hladnije za ${Math.abs(tempDiff)}°` : 
-               'Slično kao danas'}
+              {isTomorrowWarmer ? `Toplije za ${Math.abs(tempDiff)}°` :
+                isTomorrowColder ? `Hladnije za ${Math.abs(tempDiff)}°` :
+                  'Slično kao danas'}
             </p>
           </div>
         </div>
@@ -281,7 +292,7 @@ export default function ProgonzaPage() {
 
   // Share functionality
   const handleShare = async (method: 'copy' | 'native') => {
-    const shareText = selectedCity 
+    const shareText = selectedCity
       ? `Vremenska prognoza za ${selectedCity.name}: ${dailyForecast[0]?.tempMax}°/${dailyForecast[0]?.tempMin}° - ${dailyForecast[0]?.description}`
       : 'Vremenska prognoza';
     const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
@@ -416,8 +427,8 @@ export default function ProgonzaPage() {
             <div className="flex items-center gap-3">
               {/* City Selector */}
               <div className="w-full max-w-md">
-                <CitySearch 
-                  onCitySelect={handleSearchSelect} 
+                <CitySearch
+                  onCitySelect={handleSearchSelect}
                   initialValue={selectedCity?.name}
                   className="w-full"
                 />
@@ -432,7 +443,7 @@ export default function ProgonzaPage() {
                 >
                   <Share2 className="w-5 h-5" />
                 </button>
-                
+
                 <AnimatePresence>
                   {showShareMenu && (
                     <motion.div
@@ -470,8 +481,8 @@ export default function ProgonzaPage() {
           <button
             onClick={() => setActiveTab("hourly")}
             className={`px-6 py-3 rounded-xl font-medium transition-all ${activeTab === "hourly"
-                ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
-                : "bg-slate-800/30 text-slate-400 border border-slate-700/30 hover:bg-slate-800/50"
+              ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+              : "bg-slate-800/30 text-slate-400 border border-slate-700/30 hover:bg-slate-800/50"
               }`}
           >
             <Clock className="w-4 h-4 inline mr-2" />
@@ -480,8 +491,8 @@ export default function ProgonzaPage() {
           <button
             onClick={() => setActiveTab("daily")}
             className={`px-6 py-3 rounded-xl font-medium transition-all ${activeTab === "daily"
-                ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
-                : "bg-slate-800/30 text-slate-400 border border-slate-700/30 hover:bg-slate-800/50"
+              ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+              : "bg-slate-800/30 text-slate-400 border border-slate-700/30 hover:bg-slate-800/50"
               }`}
           >
             <Calendar className="w-4 h-4 inline mr-2" />
@@ -503,9 +514,9 @@ export default function ProgonzaPage() {
             <ForecastSummary daily={dailyForecast} hourly={hourlyForecast} />
 
             {/* Temperature Chart */}
-            <TemperatureChart 
-              data={activeTab === 'hourly' ? hourlyForecast : dailyForecast} 
-              type={activeTab} 
+            <TemperatureChart
+              data={activeTab === 'hourly' ? hourlyForecast : dailyForecast}
+              type={activeTab}
             />
 
             {/* Hourly Forecast */}
@@ -528,72 +539,72 @@ export default function ProgonzaPage() {
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.03 }}
                           className={`flex-shrink-0 w-24 p-4 rounded-2xl text-center transition-all ${isNow
-                              ? "bg-cyan-500/20 border-2 border-cyan-500/50"
-                              : "bg-slate-700/20 hover:bg-slate-700/40 border border-slate-700/30"
+                            ? "bg-cyan-500/20 border-2 border-cyan-500/50"
+                            : "bg-slate-700/20 hover:bg-slate-700/40 border border-slate-700/30"
                             }`}
                         >
-                      <p className={`text-sm mb-2 ${isNow ? 'text-cyan-400 font-medium' : 'text-slate-400'}`}>
-                        {isNow ? "Sada" : `${time.getHours().toString().padStart(2, '0')}:00`}
-                      </p>
-                      <div className={`my-3 flex justify-center ${isNow ? 'text-cyan-400' : 'text-slate-300'}`}>
-                        {getWeatherIcon(hour.description, 32)}
-                      </div>
-                      <p className="text-xl text-white font-semibold">{hour.temp}°</p>
-                      <p className="text-xs text-slate-500 mt-1">{hour.description}</p>
-                      {hour.pop > 0 && (
-                        <div className="flex items-center justify-center gap-1 mt-2 text-blue-400 text-xs">
-                          <Droplets className="w-3 h-3" />
-                          {hour.pop}%
+                          <p className={`text-sm mb-2 ${isNow ? 'text-cyan-400 font-medium' : 'text-slate-400'}`}>
+                            {isNow ? "Sada" : `${time.getHours().toString().padStart(2, '0')}:00`}
+                          </p>
+                          <div className={`my-3 flex justify-center ${isNow ? 'text-cyan-400' : 'text-slate-300'}`}>
+                            {getWeatherIcon(hour.description, 32)}
+                          </div>
+                          <p className="text-xl text-white font-semibold">{hour.temp}°</p>
+                          <p className="text-xs text-slate-500 mt-1">{hour.description}</p>
+                          {hour.pop > 0 && (
+                            <div className="flex items-center justify-center gap-1 mt-2 text-blue-400 text-xs">
+                              <Droplets className="w-3 h-3" />
+                              {hour.pop}%
+                            </div>
+                          )}
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Detailed Hourly Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {hourlyForecast.slice(0, 4).map((hour, index) => {
+                    const time = new Date(hour.time);
+
+                    return (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="rounded-2xl bg-slate-800/30 border border-slate-700/50 p-6"
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="text-cyan-400 font-medium">
+                            {index === 0 ? "Sada" : `${time.getHours()}:00`}
+                          </span>
+                          <div className="text-slate-300">
+                            {getWeatherIcon(hour.description, 28)}
+                          </div>
                         </div>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Detailed Hourly Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {hourlyForecast.slice(0, 4).map((hour, index) => {
-                const time = new Date(hour.time);
-
-                return (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="rounded-2xl bg-slate-800/30 border border-slate-700/50 p-6"
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-cyan-400 font-medium">
-                        {index === 0 ? "Sada" : `${time.getHours()}:00`}
-                      </span>
-                      <div className="text-slate-300">
-                        {getWeatherIcon(hour.description, 28)}
-                      </div>
-                    </div>
-                    <p className="text-3xl text-white font-light mb-4">{hour.temp}°</p>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Oseća se</span>
-                        <span className="text-white">{hour.feelsLike}°</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Vlažnost</span>
-                        <span className="text-white">{hour.humidity}%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Vetar</span>
-                        <span className="text-white">{hour.windSpeed} km/h</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
+                        <p className="text-3xl text-white font-light mb-4">{hour.temp}°</p>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Oseća se</span>
+                            <span className="text-white">{hour.feelsLike}°</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Vlažnost</span>
+                            <span className="text-white">{hour.humidity}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Vetar</span>
+                            <span className="text-white">{hour.windSpeed} km/h</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
           </>
         )}
 

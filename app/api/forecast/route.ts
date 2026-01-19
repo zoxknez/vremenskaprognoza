@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     }
 
     const forecastData = await forecastResponse.json();
-    
+
     // Process hourly data (every 3 hours from API)
     const hourly = forecastData.list.slice(0, 16).map((item: any) => ({
       time: item.dt_txt,
@@ -76,11 +76,11 @@ export async function GET(request: NextRequest) {
     // Process daily data (aggregate from 3-hour intervals)
     const dailyMap = new Map();
     const days = ["Nedelja", "Ponedeljak", "Utorak", "Sreda", "Četvrtak", "Petak", "Subota"];
-    
+
     forecastData.list.forEach((item: any) => {
       const date = new Date(item.dt * 1000);
       const dateKey = date.toISOString().split('T')[0];
-      
+
       if (!dailyMap.has(dateKey)) {
         dailyMap.set(dateKey, {
           date: date.toISOString(),
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
           pop: [],
         });
       }
-      
+
       const dayData = dailyMap.get(dateKey);
       dayData.temps.push(item.main.temp);
       dayData.humidity.push(item.main.humidity);
@@ -100,6 +100,25 @@ export async function GET(request: NextRequest) {
       dayData.descriptions.push(item.weather[0]?.description || 'Oblačno');
       dayData.pop.push((item.pop || 0) * 100);
     });
+
+    // Fetch current weather for real sunrise/sunset data
+    let sunriseTime = '06:30';
+    let sunsetTime = '18:30';
+
+    try {
+      const currentWeatherResponse = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`
+      );
+      if (currentWeatherResponse.ok) {
+        const currentData = await currentWeatherResponse.json();
+        if (currentData.sys?.sunrise && currentData.sys?.sunset) {
+          sunriseTime = new Date(currentData.sys.sunrise * 1000).toLocaleTimeString('sr-Latn-RS', { hour: '2-digit', minute: '2-digit' });
+          sunsetTime = new Date(currentData.sys.sunset * 1000).toLocaleTimeString('sr-Latn-RS', { hour: '2-digit', minute: '2-digit' });
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch sunrise/sunset:', e);
+    }
 
     const daily = Array.from(dailyMap.values()).slice(0, 7).map((day: { date: string; dayName: string; temps: number[]; humidity: number[]; windSpeed: number[]; icons: string[]; descriptions: string[]; pop: number[] }) => {
       // Get the most common description
@@ -109,13 +128,7 @@ export async function GET(request: NextRequest) {
       }, {});
       const sortedDesc = Object.entries(descCounts).sort((a, b) => b[1] - a[1]);
       const mostCommonDesc = sortedDesc[0]?.[0] ?? 'Oblačno';
-      
-      // Calculate sunrise/sunset (approximate)
-      const date = new Date(day.date);
-      const month = date.getMonth();
-      const sunriseHour = month >= 3 && month <= 8 ? 5 + Math.floor(Math.random() * 2) : 6 + Math.floor(Math.random() * 2);
-      const sunsetHour = month >= 3 && month <= 8 ? 20 + Math.floor(Math.random() * 2) : 17 + Math.floor(Math.random() * 2);
-      
+
       return {
         date: day.date,
         dayName: day.dayName,
@@ -126,8 +139,8 @@ export async function GET(request: NextRequest) {
         description: mostCommonDesc,
         icon: '04d',
         pop: Math.round(Math.max(...day.pop)),
-        sunrise: `${sunriseHour.toString().padStart(2, '0')}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`,
-        sunset: `${sunsetHour.toString().padStart(2, '0')}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`,
+        sunrise: sunriseTime,
+        sunset: sunsetTime,
       };
     });
 
@@ -144,3 +157,4 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(errorResponse, { status: apiError.statusCode });
   }
 }
+
