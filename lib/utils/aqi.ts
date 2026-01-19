@@ -1,6 +1,11 @@
 // Centralizovana AQI kalkulacija po US EPA standardu
 // https://www.airnow.gov/aqi/aqi-basics/
 
+import { AQICategory } from '@/lib/types/air-quality';
+
+// Re-export za jednostavniji pristup
+export type { AQICategory } from '@/lib/types/air-quality';
+
 export interface AQIBreakpoint {
   low: number;
   high: number;
@@ -54,22 +59,20 @@ export function calculateAQIFromPM10(pm10: number): number {
 
 export function calculateAQI(pm25?: number, pm10?: number): number {
   const indices: number[] = [];
-  
+
   if (pm25 !== undefined && pm25 >= 0) {
     indices.push(calculateAQIFromPM25(pm25));
   }
-  
+
   if (pm10 !== undefined && pm10 >= 0) {
     indices.push(calculateAQIFromPM10(pm10));
   }
-  
+
   if (indices.length === 0) return 0;
-  
+
   // AQI je maksimum svih sub-indeksa
   return Math.max(...indices);
 }
-
-export type AQICategory = "good" | "moderate" | "sensitive" | "unhealthy" | "veryUnhealthy" | "hazardous";
 
 export function getAQICategory(aqi: number): AQICategory {
   if (aqi <= 50) return "good";

@@ -1,6 +1,6 @@
 'use client';
 
-import { useFavorites } from '@/hooks/useFavorites';
+import { useFavorites } from '@/lib/hooks/useFavorites';
 import { AirQualityData, AQI_COLORS } from '@/lib/types/air-quality';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

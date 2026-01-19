@@ -2,26 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import { fetchAllAirQualityData } from '@/lib/api/aggregate';
 import { calculateAQI } from '@/lib/utils/aqi';
 import { getApiKey } from '@/lib/config/env';
+import { airQualityQuerySchema, parseQueryParams, formatZodErrors } from '@/lib/utils/validation';
 
 const OPENWEATHER_API_KEY = getApiKey('openweather');
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const lat = searchParams.get('lat');
-  const lon = searchParams.get('lon');
-  
-  // Validacija koordinata
-  if (lat && lon) {
-    const latNum = parseFloat(lat);
-    const lonNum = parseFloat(lon);
-    
-    if (isNaN(latNum) || isNaN(lonNum) || latNum < -90 || latNum > 90 || lonNum < -180 || lonNum > 180) {
-      return NextResponse.json(
-        { error: 'Neispravne koordinate' },
-        { status: 400 }
-      );
-    }
+
+  // Zod validacija parametara
+  const parseResult = parseQueryParams(searchParams, airQualityQuerySchema);
+
+  if (!parseResult.success) {
+    return NextResponse.json(
+      { error: 'Neispravni parametri', details: formatZodErrors(parseResult.error) },
+      { status: 400 }
+    );
   }
+
+  const { lat, lon } = parseResult.data;
 
   try {
     // If lat/lon provided, fetch air quality for specific location
@@ -38,7 +36,7 @@ export async function GET(request: NextRequest) {
       const components = aqiData?.list?.[0]?.components || {};
       const pm25 = components.pm2_5 || 0;
       const pm10 = components.pm10 || 0;
-      
+
       // Koristi centralizovanu AQI kalkulaciju
       const aqi = calculateAQI(pm25, pm10);
 
@@ -60,7 +58,7 @@ export async function GET(request: NextRequest) {
 
     // Default: fetch all air quality data
     const data = await fetchAllAirQualityData();
-    
+
     return NextResponse.json(data, {
       headers: {
         'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',

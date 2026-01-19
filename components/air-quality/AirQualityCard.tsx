@@ -15,8 +15,9 @@ interface AirQualityCardProps {
 const categoryLabels: Record<string, string> = {
   good: 'Dobar',
   moderate: 'Prihvatljiv',
+  sensitive: 'Nezdrav za osetljive',
   unhealthy: 'Loš',
-  'very-unhealthy': 'Veoma loš',
+  veryUnhealthy: 'Veoma loš',
   hazardous: 'Opasan',
 };
 

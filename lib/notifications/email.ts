@@ -23,7 +23,7 @@ interface AlertEmailData {
 // Send email using configured provider
 export async function sendEmail(options: EmailOptions): Promise<boolean> {
   const provider = process.env.EMAIL_PROVIDER || 'resend';
-  
+
   switch (provider) {
     case 'resend':
       return sendViaResend(options);
@@ -114,8 +114,9 @@ export function createAlertEmailTemplate(data: AlertEmailData): string {
   const aqiColors: Record<string, string> = {
     good: '#22c55e',
     moderate: '#eab308',
-    unhealthy: '#f97316',
-    'very-unhealthy': '#ef4444',
+    sensitive: '#f97316',
+    unhealthy: '#ef4444',
+    veryUnhealthy: '#a855f7',
     hazardous: '#7c3aed',
   };
 
@@ -231,8 +232,9 @@ function getAQICategoryName(category: string): string {
   const names: Record<string, string> = {
     good: 'Dobar',
     moderate: 'Umjeren',
+    sensitive: 'Nezdrav za osetljive',
     unhealthy: 'Nezdrav',
-    'very-unhealthy': 'Vrlo nezdrav',
+    veryUnhealthy: 'Vrlo nezdrav',
     hazardous: 'Opasan',
   };
   return names[category] || category;
@@ -244,7 +246,7 @@ export async function sendDailyDigest(
   cities: Array<{ name: string; aqi: number; category: string }>
 ): Promise<boolean> {
   const avgAqi = Math.round(cities.reduce((acc, c) => acc + c.aqi, 0) / cities.length);
-  
+
   const html = `
 <!DOCTYPE html>
 <html lang="sr">

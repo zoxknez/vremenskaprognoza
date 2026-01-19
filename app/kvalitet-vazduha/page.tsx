@@ -29,7 +29,7 @@ import CitySearch, { SearchResult } from "@/components/common/CitySearch";
 import { POPULAR_CITIES } from "@/lib/api/balkan-countries";
 import { AirQualityData } from "@/lib/types/weather";
 import { getAQIColor, getAQIBg, getAQILabel } from "@/components/weather/weather-utils";
-import { useFavorites } from "@/hooks/useFavorites";
+import { useFavorites } from "@/lib/hooks/useFavorites";
 
 // WHO Guidelines for air quality (annual mean)
 const WHO_STANDARDS = {
@@ -54,56 +54,12 @@ interface NearbyStation {
   lon: number;
 }
 
-const getAQIDescription = (aqi: number): string => {
-  if (aqi <= 50) return "Kvalitet vazduha je zadovoljavajući i zagađenje vazduha predstavlja mali ili nikakav rizik.";
-  if (aqi <= 100) return "Kvalitet vazduha je prihvatljiv. Međutim, za neke zagađivače može postojati umeren zdravstveni problem za veoma mali broj osoba.";
-  if (aqi <= 150) return "Članovi osetljivih grupa mogu osetiti zdravstvene efekte. Opšta populacija verovatno neće biti pogođena.";
-  if (aqi <= 200) return "Svi mogu početi da osećaju zdravstvene efekte. Članovi osetljivih grupa mogu osetiti ozbiljnije efekte.";
-  if (aqi <= 300) return "Zdravstvena upozorenja hitnih stanja. Cela populacija verovatno će biti pogođena.";
-  return "Zdravstveno upozorenje: svi mogu osetiti ozbiljne zdravstvene efekte.";
-};
-
-const getHealthRecommendations = (aqi: number): string[] => {
-  if (aqi <= 50) {
-    return [
-      "Idealno za aktivnosti na otvorenom",
-      "Prozračite prostor",
-      "Uživajte u svežem vazduhu",
-    ];
-  }
-  if (aqi <= 100) {
-    return [
-      "Većina ljudi može normalno da bude aktivna",
-      "Osetljive osobe bi trebalo da razmotre smanjenje intenzivnih aktivnosti",
-      "Pratite prognoza kvaliteta vazduha",
-    ];
-  }
-  if (aqi <= 150) {
-    return [
-      "Osetljive grupe bi trebalo da ograniče boravak napolju",
-      "Smanjite intenzivne aktivnosti na otvorenom",
-      "Držite prozore zatvorenim",
-    ];
-  }
-  if (aqi <= 200) {
-    return [
-      "Izbegavajte fizičke aktivnosti na otvorenom",
-      "Nosite masku ako morate napolje",
-      "Koristite prečistač vazduha u zatvorenom prostoru",
-    ];
-  }
-  return [
-    "Ostanite u zatvorenom prostoru",
-    "Izbegavajte bilo kakve aktivnosti napolju",
-    "Koristite masku N95 ako morate napolje",
-    "Potražite medicinsku pomoć ako osećate simptome",
-  ];
-};
+import { getAQIDescription, getHealthRecommendations } from "@/lib/utils/aqi";
 
 // AQI History Chart Component
 const AQIHistoryChart = ({ history }: { history: HistoricalAQI[] }) => {
   const maxAqi = Math.max(...history.map(h => h.aqi), 100);
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -114,7 +70,7 @@ const AQIHistoryChart = ({ history }: { history: HistoricalAQI[] }) => {
         <BarChart3 className="w-6 h-6 text-cyan-400" />
         <h3 className="text-xl font-semibold text-white">Istorija AQI (24h)</h3>
       </div>
-      
+
       <div className="flex items-end gap-1 h-40">
         {history.map((item, index) => {
           const height = (item.aqi / maxAqi) * 100;
@@ -127,13 +83,12 @@ const AQIHistoryChart = ({ history }: { history: HistoricalAQI[] }) => {
               className="flex-1 relative group"
             >
               <div
-                className={`w-full h-full rounded-t-lg ${
-                  item.aqi <= 50 ? 'bg-green-500' :
+                className={`w-full h-full rounded-t-lg ${item.aqi <= 50 ? 'bg-green-500' :
                   item.aqi <= 100 ? 'bg-yellow-500' :
-                  item.aqi <= 150 ? 'bg-orange-500' :
-                  item.aqi <= 200 ? 'bg-red-500' :
-                  'bg-purple-500'
-                }`}
+                    item.aqi <= 150 ? 'bg-orange-500' :
+                      item.aqi <= 200 ? 'bg-red-500' :
+                        'bg-purple-500'
+                  }`}
               />
               {/* Tooltip */}
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-700 rounded text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
@@ -143,14 +98,14 @@ const AQIHistoryChart = ({ history }: { history: HistoricalAQI[] }) => {
           );
         })}
       </div>
-      
+
       {/* Time labels */}
       <div className="flex justify-between mt-2 text-xs text-slate-500">
         <span>Pre 24h</span>
         <span>Pre 12h</span>
         <span>Sada</span>
       </div>
-      
+
       {/* Legend */}
       <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-slate-700/50">
         <div className="flex items-center gap-2">
@@ -198,11 +153,10 @@ const WHOComparison = ({ airQuality }: { airQuality: AirQualityData }) => {
           <Globe className="w-6 h-6 text-blue-400" />
           <h3 className="text-xl font-semibold text-white">WHO Standardi</h3>
         </div>
-        <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-          meetsStandards === totalStandards ? 'bg-green-500/20 text-green-400' :
+        <div className={`px-3 py-1 rounded-full text-sm font-medium ${meetsStandards === totalStandards ? 'bg-green-500/20 text-green-400' :
           meetsStandards >= totalStandards / 2 ? 'bg-yellow-500/20 text-yellow-400' :
-          'bg-red-500/20 text-red-400'
-        }`}>
+            'bg-red-500/20 text-red-400'
+          }`}>
           {meetsStandards}/{totalStandards} ispunjeno
         </div>
       </div>
@@ -211,7 +165,7 @@ const WHOComparison = ({ airQuality }: { airQuality: AirQualityData }) => {
         {comparisons.map((item, index) => {
           const percentage = (item.value / item.limit) * 100;
           const isWithinLimit = item.value <= item.limit;
-          
+
           return (
             <motion.div
               key={item.key}
@@ -240,12 +194,11 @@ const WHOComparison = ({ airQuality }: { airQuality: AirQualityData }) => {
                   initial={{ width: 0 }}
                   animate={{ width: `${Math.min(percentage, 100)}%` }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className={`h-2 rounded-full ${
-                    percentage <= 50 ? 'bg-green-500' :
+                  className={`h-2 rounded-full ${percentage <= 50 ? 'bg-green-500' :
                     percentage <= 100 ? 'bg-yellow-500' :
-                    percentage <= 200 ? 'bg-orange-500' :
-                    'bg-red-500'
-                  }`}
+                      percentage <= 200 ? 'bg-orange-500' :
+                        'bg-red-500'
+                    }`}
                 />
               </div>
               {!isWithinLimit && (
@@ -269,9 +222,9 @@ const WHOComparison = ({ airQuality }: { airQuality: AirQualityData }) => {
 };
 
 // Nearby Stations Mini Map Component
-const NearbyStationsCard = ({ stations, onSelectStation }: { 
-  stations: NearbyStation[], 
-  onSelectStation: (station: NearbyStation) => void 
+const NearbyStationsCard = ({ stations, onSelectStation }: {
+  stations: NearbyStation[],
+  onSelectStation: (station: NearbyStation) => void
 }) => {
   return (
     <motion.div
@@ -304,12 +257,11 @@ const NearbyStationsCard = ({ stations, onSelectStation }: {
             className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-700/20 hover:bg-slate-700/40 transition-colors text-left"
           >
             <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${
-                station.aqi <= 50 ? 'bg-green-500' :
+              <div className={`w-3 h-3 rounded-full ${station.aqi <= 50 ? 'bg-green-500' :
                 station.aqi <= 100 ? 'bg-yellow-500' :
-                station.aqi <= 150 ? 'bg-orange-500' :
-                'bg-red-500'
-              }`} />
+                  station.aqi <= 150 ? 'bg-orange-500' :
+                    'bg-red-500'
+                }`} />
               <div>
                 <p className="text-white font-medium">{station.name}</p>
                 <p className="text-xs text-slate-400">{station.distance.toFixed(1)} km</p>
@@ -327,14 +279,14 @@ const NearbyStationsCard = ({ stations, onSelectStation }: {
 };
 
 // Notification Settings Component
-const NotificationBanner = ({ 
-  enabled, 
+const NotificationBanner = ({
+  enabled,
   onToggle,
-  currentAqi 
-}: { 
-  enabled: boolean, 
+  currentAqi
+}: {
+  enabled: boolean,
   onToggle: () => void,
-  currentAqi: number 
+  currentAqi: number
 }) => {
   const [threshold, setThreshold] = useState(100);
 
@@ -342,11 +294,10 @@ const NotificationBanner = ({
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-2xl p-4 border ${
-        enabled 
-          ? 'bg-cyan-500/10 border-cyan-500/30' 
-          : 'bg-slate-800/30 border-slate-700/50'
-      }`}
+      className={`rounded-2xl p-4 border ${enabled
+        ? 'bg-cyan-500/10 border-cyan-500/30'
+        : 'bg-slate-800/30 border-slate-700/50'
+        }`}
     >
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -360,13 +311,13 @@ const NotificationBanner = ({
               {enabled ? 'Notifikacije uključene' : 'Obaveštenja o kvalitetu vazduha'}
             </p>
             <p className="text-xs text-slate-400">
-              {enabled 
-                ? `Primićete obaveštenje kada AQI pređe ${threshold}` 
+              {enabled
+                ? `Primićete obaveštenje kada AQI pređe ${threshold}`
                 : 'Uključite da dobijate upozorenja za loš kvalitet vazduha'}
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-3">
           {enabled && (
             <select
@@ -382,17 +333,16 @@ const NotificationBanner = ({
           )}
           <button
             onClick={onToggle}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-              enabled
-                ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
-                : 'bg-cyan-500 text-white hover:bg-cyan-600'
-            }`}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${enabled
+              ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
+              : 'bg-cyan-500 text-white hover:bg-cyan-600'
+              }`}
           >
             {enabled ? 'Isključi' : 'Uključi'}
           </button>
         </div>
       </div>
-      
+
       {currentAqi > threshold && enabled && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
@@ -428,19 +378,19 @@ export default function KvalitetVazduhaPage() {
   const generateAqiHistory = useCallback((currentAqi: number) => {
     const history: HistoricalAQI[] = [];
     const now = new Date();
-    
+
     for (let i = 23; i >= 0; i--) {
       const time = new Date(now.getTime() - i * 60 * 60 * 1000);
       const variation = Math.floor(Math.random() * 30) - 15;
       const aqi = Math.max(10, Math.min(300, currentAqi + variation));
-      
+
       history.push({
         time: time.getHours().toString().padStart(2, '0') + ':00',
         aqi,
         label: getAQILabel(aqi)
       });
     }
-    
+
     return history;
   }, []);
 
@@ -449,7 +399,7 @@ export default function KvalitetVazduhaPage() {
     const stationNames = [
       'Centar', 'Industrijska zona', 'Park', 'Autoput', 'Bolnica'
     ];
-    
+
     return stationNames.slice(0, 4).map((name, index) => ({
       name: `${city.name} - ${name}`,
       distance: (index + 1) * 1.2 + Math.random() * 0.5,
@@ -531,7 +481,7 @@ export default function KvalitetVazduhaPage() {
       try {
         const response = await fetch(
           `/api/air-quality?lat=${city.lat}&lon=${city.lon}`,
-          { 
+          {
             method: 'GET',
             cache: 'no-cache',
             headers: {
@@ -561,7 +511,7 @@ export default function KvalitetVazduhaPage() {
     const fetchedResults = (await Promise.all(promises))
       .filter((result): result is { name: string; country: string; aqi: number } => result !== null)
       .sort((a, b) => a.aqi - b.aqi);
-    
+
     // Only update if we have at least some valid data
     if (fetchedResults.length > 0) {
       setAllCitiesAqi(fetchedResults);
@@ -617,7 +567,7 @@ export default function KvalitetVazduhaPage() {
             animate={{ opacity: 1, x: 0 }}
             className="w-full max-w-md"
           >
-            <CitySearch 
+            <CitySearch
               onCitySelect={handleSearchSelect}
               initialValue={selectedCity?.name}
               className="w-full"
@@ -806,7 +756,7 @@ export default function KvalitetVazduhaPage() {
               </div>
 
               {/* Nearby Stations */}
-              <NearbyStationsCard 
+              <NearbyStationsCard
                 stations={nearbyStations}
                 onSelectStation={(station) => {
                   // Could navigate to map or show station details

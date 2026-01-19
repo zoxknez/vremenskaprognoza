@@ -57,7 +57,7 @@ export async function fetchAQIForecast(
     }
 
     const data = await response.json();
-    
+
     if (!data.list || data.list.length === 0) {
       return null;
     }
@@ -66,7 +66,7 @@ export async function fetchAQIForecast(
     const hourly: ForecastData[] = data.list.slice(0, 48).map((item: any) => {
       const components = item.components || {};
       const aqi = calculateAQIFromComponents(components);
-      
+
       return {
         timestamp: new Date(item.dt * 1000).toISOString(),
         aqi,
@@ -84,7 +84,7 @@ export async function fetchAQIForecast(
 
     // Calculate daily aggregates
     const dailyMap = new Map<string, ForecastData[]>();
-    
+
     for (const item of hourly) {
       const date = item.timestamp.split('T')[0];
       if (!dailyMap.has(date)) {
@@ -96,7 +96,7 @@ export async function fetchAQIForecast(
     const daily = Array.from(dailyMap.entries()).map(([date, items]) => {
       const aqis = items.map(i => i.aqi);
       const avgAqi = Math.round(aqis.reduce((a, b) => a + b, 0) / aqis.length);
-      
+
       return {
         date,
         avgAqi,
@@ -216,8 +216,8 @@ function calculateAQI(
     if (concentration >= bp.low && concentration <= bp.high) {
       return Math.round(
         ((bp.aqiHigh - bp.aqiLow) / (bp.high - bp.low)) *
-          (concentration - bp.low) +
-          bp.aqiLow
+        (concentration - bp.low) +
+        bp.aqiLow
       );
     }
   }
@@ -227,7 +227,8 @@ function calculateAQI(
 function getAQICategory(aqi: number): AQICategory {
   if (aqi <= 50) return 'good';
   if (aqi <= 100) return 'moderate';
-  if (aqi <= 150) return 'unhealthy';
-  if (aqi <= 200) return 'very-unhealthy';
+  if (aqi <= 150) return 'sensitive';
+  if (aqi <= 200) return 'unhealthy';
+  if (aqi <= 300) return 'veryUnhealthy';
   return 'hazardous';
 }

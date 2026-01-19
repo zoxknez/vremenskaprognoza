@@ -51,6 +51,27 @@ export const HEALTH_ADVICE: Record<AQICategory, HealthAdvice> = {
     icon: '😐',
     color: '#eab308',
   },
+  sensitive: {
+    category: 'sensitive',
+    title: 'Nezdrav za osetljive grupe',
+    titleEn: 'Unhealthy for Sensitive Groups',
+    description: 'Članovi osetljivih grupa mogu doživeti zdravstvene efekte. Opšta populacija verovatno neće biti pogođena.',
+    descriptionEn: 'Members of sensitive groups may experience health effects. The general public is less likely to be affected.',
+    generalPopulation: [
+      'Smanjite produžene napore na otvorenom',
+      'Pratite kvalitet vazduha',
+      'Ako osećate simptome, pređite na aktivnosti u zatvorenom prostoru',
+    ],
+    sensitiveGroups: [
+      'Izbegavajte produžene aktivnosti na otvorenom',
+      'Deca i stariji treba da ostanu u zatvorenom prostoru',
+      'Astmatičari treba da prate simptome pažljivije',
+      'Nosite N95 masku ako morate napolje',
+    ],
+    outdoorActivity: 'reduce',
+    icon: '😷',
+    color: '#f97316',
+  },
   unhealthy: {
     category: 'unhealthy',
     title: 'Nezdrav za osetljive grupe',
@@ -72,8 +93,8 @@ export const HEALTH_ADVICE: Record<AQICategory, HealthAdvice> = {
     icon: '😷',
     color: '#f97316',
   },
-  'very-unhealthy': {
-    category: 'very-unhealthy',
+  veryUnhealthy: {
+    category: 'veryUnhealthy',
     title: 'Vrlo nezdrav',
     titleEn: 'Very Unhealthy',
     description: 'Zdravstvena upozorenja o vanrednim uslovima. Cela populacija će verovatno biti pogođena.',
@@ -196,7 +217,7 @@ export const ACTIVITY_RECOMMENDATIONS = {
 
 export function getActivityRecommendation(activity: keyof typeof ACTIVITY_RECOMMENDATIONS, aqi: number) {
   const { thresholds } = ACTIVITY_RECOMMENDATIONS[activity];
-  
+
   if (aqi <= thresholds.safe) {
     return { status: 'safe', message: 'Bezbedno za ovu aktivnost' };
   }

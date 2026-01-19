@@ -5,6 +5,7 @@ import { calculateAQI } from '@/lib/utils/aqi';
 import { BALKAN_COUNTRIES } from '@/lib/api/balkan-countries';
 import { getApiKey } from '@/lib/config/env';
 import { handleAPIError, createErrorResponse } from '@/lib/utils/api-error';
+import { findNearestStation, MAX_STATION_DISTANCE_KM } from '@/lib/config/stations';
 
 const OPENWEATHER_API_KEY = getApiKey('openweather');
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   const city = searchParams.get('city');
   let lat = searchParams.get('lat');
   let lon = searchParams.get('lon');
-  
+
   // If city is provided but no coordinates, try to find them
   if (city && (!lat || !lon)) {
     // 1. Try to find in local database
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
   if (lat && lon) {
     const latNum = parseFloat(lat);
     const lonNum = parseFloat(lon);
-    
+
     if (isNaN(latNum) || isNaN(lonNum) || latNum < -90 || latNum > 90 || lonNum < -180 || lonNum > 180) {
       return NextResponse.json(
         { error: 'Neispravne koordinate' },
@@ -67,80 +68,51 @@ export async function GET(request: NextRequest) {
         `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric&lang=en`,
         { next: { revalidate: 300 } } // Cache for 5 minutes
       );
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch weather from OpenWeather');
       }
-      
+
       const data = await response.json();
-      
+
       // Fetch air quality data
       const aqiResponse = await fetch(
         `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}`,
         { next: { revalidate: 300 } }
       );
-      
+
       let aqiData = null;
       let hasRealAQIData = false;
       if (aqiResponse.ok) {
         aqiData = await aqiResponse.json();
         const components = aqiData?.list?.[0]?.components;
-        
+
         // OpenWeather Air Pollution API vraća INTERPOLIRANE podatke čak i za mesta bez stanica!
         // ODBACUJEMO SVE interpolirane podatke - prikazujemo SAMO podatke sa pravih mernih stanica
-        // Lista poznatih mernih stanica u Srbiji (OpenAQ, SEPA, itd.)
-        const KNOWN_STATIONS = [
-          { name: 'Beograd', lat: 44.8176, lon: 20.4633 },
-          { name: 'Novi Sad', lat: 45.2671, lon: 19.8335 },
-          { name: 'Niš', lat: 43.3209, lon: 21.8957 },
-          { name: 'Kragujevac', lat: 44.0128, lon: 20.9164 },
-          { name: 'Subotica', lat: 46.1000, lon: 19.6667 },
-          { name: 'Smederevo', lat: 44.6628, lon: 20.9269 },
-          { name: 'Pančevo', lat: 44.8738, lon: 20.6517 },
-          { name: 'Užice', lat: 43.8586, lon: 19.8425 },
-          { name: 'Valjevo', lat: 44.2747, lon: 19.8903 },
-          { name: 'Kraljevo', lat: 43.7257, lon: 20.6897 },
-        ];
-        
-        // Računamo udaljenost do najbliže poznate stanice (Haversine formula)
-        const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-          const R = 6371; // Radius Zemlje u km
-          const dLat = (lat2 - lat1) * Math.PI / 180;
-          const dLon = (lon2 - lon1) * Math.PI / 180;
-          const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-          return R * c;
-        };
-        
+        // Koristimo centralizovanu konfiguraciju stanica
         const latNum = parseFloat(lat!);
         const lonNum = parseFloat(lon!);
-        const distancesToStations = KNOWN_STATIONS.map(station => ({
-          ...station,
-          distance: calculateDistance(latNum, lonNum, station.lat, station.lon)
-        }));
-        
-        const nearestStation = distancesToStations.reduce((prev, curr) => 
-          prev.distance < curr.distance ? prev : curr
-        );
-        
+        const stationResult = findNearestStation(latNum, lonNum);
+
         // SAMO lokacije unutar 5km od poznate stanice imaju prave podatke
         // Sve ostalo su interpolacije koje NE prikazujemo
-        if (nearestStation.distance <= 5) {
-          console.log(`✅ REAL DATA: ${city || `${lat},${lon}`} is ${nearestStation.distance.toFixed(1)}km from station ${nearestStation.name}`);
+        if (stationResult && stationResult.distance <= MAX_STATION_DISTANCE_KM) {
+          console.log(`✅ REAL DATA: ${city || `${lat},${lon}`} is ${stationResult.distance.toFixed(1)}km from station ${stationResult.station.name}`);
           hasRealAQIData = true;
         } else {
-          console.log(`❌ FAKE DATA: ${city || `${lat},${lon}`} is ${nearestStation.distance.toFixed(1)}km from nearest station ${nearestStation.name} - SKIPPING AQI`);
+          const nearestInfo = stationResult
+            ? `${stationResult.distance.toFixed(1)}km from ${stationResult.station.name}`
+            : 'no stations found';
+          console.log(`❌ FAKE DATA: ${city || `${lat},${lon}`} is ${nearestInfo} - SKIPPING AQI`);
           hasRealAQIData = false;
         }
       }
-      
+
       // Calculate AQI from components SAMO ako postoje pravi podaci
       const components = aqiData?.list?.[0]?.components || {};
       const pm25 = hasRealAQIData ? (components.pm2_5 || 0) : 0;
       const pm10 = hasRealAQIData ? (components.pm10 || 0) : 0;
-      
+
       // Koristi centralizovanu AQI kalkulaciju - vrati null ako nema podataka
       const aqi = hasRealAQIData ? calculateAQI(pm25, pm10) : null;
 
@@ -148,7 +120,7 @@ export async function GET(request: NextRequest) {
       let dispersionStatus: 'good' | 'moderate' | 'poor' = 'moderate';
       let dispersionReason = '';
       let pollutionRisk: 'low' | 'medium' | 'high' = 'medium';
-      
+
       const windSpeed = data.wind?.speed || 0;
       const temp = data.main?.temp || 0;
       const humidity = data.main?.humidity || 0;
@@ -212,7 +184,7 @@ export async function GET(request: NextRequest) {
         } : null
       });
     }
-    
+
     // Fallback for home page list (no specific city/coords)
     const weather = await getBalkanWeather();
     return NextResponse.json(weather);

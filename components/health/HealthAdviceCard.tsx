@@ -186,7 +186,7 @@ export function ActivityRecommendations({ aqi }: ActivityRecommendationsProps) {
               key as keyof typeof ACTIVITY_RECOMMENDATIONS,
               aqi
             );
-            
+
             const statusColors = {
               safe: 'text-green-500 bg-green-500/10',
               caution: 'text-yellow-500 bg-yellow-500/10',
@@ -233,11 +233,12 @@ export function HealthTipBadge({ aqiCategory }: { aqiCategory: AQICategory }) {
   const advice = HEALTH_ADVICE[aqiCategory];
   const colors = AQI_COLORS[aqiCategory];
 
-  const tips = {
+  const tips: Record<AQICategory, string> = {
     good: 'Idealno za aktivnosti napolju',
     moderate: 'Većina može normalno nastaviti aktivnosti',
-    unhealthy: 'Osetljive grupe treba da smanje napore',
-    'very-unhealthy': 'Izbegavajte aktivnosti napolju',
+    sensitive: 'Osetljive grupe treba da smanje napore',
+    unhealthy: 'Izbegavajte produžene napore napolju',
+    veryUnhealthy: 'Izbegavajte aktivnosti napolju',
     hazardous: 'Ostanite u zatvorenom!',
   };
 

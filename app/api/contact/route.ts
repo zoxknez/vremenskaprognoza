@@ -8,13 +8,50 @@ const contactSchema = z.object({
   message: z.string().min(10, 'Poruka mora imati najmanje 10 karaktera').max(5000),
 });
 
-// Rate limiting - jednostavna implementacija
+// Rate limiting - poboljšana implementacija sa cleanup-om
 const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
 const RATE_LIMIT = 5; // maksimalno 5 poruka
 const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // po satu
+const MAX_MAP_SIZE = 10000; // maksimalna veličina mape
+let lastCleanup = Date.now();
+const CLEANUP_INTERVAL = 5 * 60 * 1000; // čišćenje svakih 5 minuta
+
+// Čišćenje zastarelih unosa
+function cleanupRateLimitMap(): void {
+  const now = Date.now();
+  
+  // Preskočiti ako nije prošlo dovoljno vremena
+  if (now - lastCleanup < CLEANUP_INTERVAL) {
+    return;
+  }
+  
+  lastCleanup = now;
+  
+  // Obrisati zastarele unose
+  for (const [ip, record] of rateLimitMap.entries()) {
+    if (now - record.lastReset > RATE_LIMIT_WINDOW) {
+      rateLimitMap.delete(ip);
+    }
+  }
+  
+  // Ako je mapa i dalje prevelika, obrisati najstarije unose
+  if (rateLimitMap.size > MAX_MAP_SIZE) {
+    const entries = Array.from(rateLimitMap.entries())
+      .sort((a, b) => a[1].lastReset - b[1].lastReset);
+    
+    const toDelete = entries.slice(0, rateLimitMap.size - MAX_MAP_SIZE + 1000);
+    for (const [ip] of toDelete) {
+      rateLimitMap.delete(ip);
+    }
+  }
+}
 
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
+  
+  // Pokreni cleanup pre provere
+  cleanupRateLimitMap();
+  
   const record = rateLimitMap.get(ip);
   
   if (!record) {
