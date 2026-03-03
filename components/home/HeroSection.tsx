@@ -31,7 +31,7 @@ export function HeroSection({
                     Vremenska <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-accent-cyan">Prognoza</span>
                 </h1>
                 <p className="text-base sm:text-lg md:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
-                    Precizna vremenska prognoza, kvalitet vazduha i detaljni podaci za gradove širom Balkana i sveta.
+                    Precizna vremenska prognoza, kvalitet vazduha i detaljni podaci za gradove sirom Balkana i sveta.
                 </p>
             </motion.div>
 
@@ -50,7 +50,7 @@ export function HeroSection({
                         className="flex items-center justify-center gap-2 mb-4 p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400"
                     >
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span className="text-sm">Detektovanje vaše lokacije...</span>
+                        <span className="text-sm">Detektovanje vase lokacije...</span>
                     </motion.div>
                 )}
 
@@ -79,7 +79,7 @@ export function HeroSection({
                             onClick={onResetLocation}
                             className="text-xs text-cyan-400 hover:text-cyan-300 underline"
                         >
-                            Pokušaj ponovo
+                            Pokusaj ponovo
                         </button>
                     </motion.div>
                 )}
@@ -104,3 +104,4 @@ export function HeroSection({
         </div>
     );
 }
+

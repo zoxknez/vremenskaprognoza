@@ -7,29 +7,37 @@ import { fetchWAQIBalkanData } from './waqi-balkan';
 import { fetchOpenWeatherBalkanData } from './openweather-balkan';
 import { fetchAQICNData } from './aqicn';
 import { fetchAirVisualData } from './airvisual';
+import { fetchGoogleBalkanData } from './google-balkan';
 
 export async function fetchAllAirQualityData(): Promise<AirQualityData[]> {
   const [
+    googleBalkanData, // Google API as primary source
     openaqData,
     sensorCommunityData,
     allThingsTalkData,
     sepaData,
-    waqiBalkanData,
+    waqiBalkanData, // WAQI as fallback
     openWeatherBalkanData,
     aqicnData,
     airVisualData,
   ] = await Promise.allSettled([
+    fetchGoogleBalkanData(), // Try Google first
     fetchOpenAQData('RS'),
     fetchSensorCommunityData(),
     fetchAllThingsTalkData(process.env.ALLTHINGSTALK_TOKEN),
     fetchSEPAData(),
-    fetchWAQIBalkanData(),
+    fetchWAQIBalkanData(), // Use WAQI as fallback
     fetchOpenWeatherBalkanData(),
     fetchAQICNData(),
     fetchAirVisualData(),
   ]);
 
   const allData: AirQualityData[] = [];
+
+  // Google API data (primary source)
+  if (googleBalkanData.status === 'fulfilled') {
+    allData.push(...googleBalkanData.value);
+  }
 
   if (openaqData.status === 'fulfilled') {
     allData.push(...openaqData.value);
@@ -82,7 +90,7 @@ function removeDuplicates(data: AirQualityData[]): AirQualityData[] {
     // Validate coordinates
     const lon = item.location.coordinates[0];
     const lat = item.location.coordinates[1];
-    
+
     // Skip if coordinates are invalid
     if (typeof lon !== 'number' || typeof lat !== 'number' || isNaN(lon) || isNaN(lat)) {
       continue;

@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       subscription,
       createAlertPayload('daily_summary', {
         cityName: 'Vaš region',
-        message: 'Uspješno ste se pretplatili na obavijesti o kvaliteti zraka!'
+        message: 'Uspešno ste se pretplatili na obaveštenja o kvalitetu vazduha!'
       })
     );
 

@@ -130,7 +130,7 @@ export function CityComparison({ data, maxCities = 5 }: CityComparisonProps) {
     return point;
   });
 
-  const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00C49F'];
+  const COLORS = ['#06b6d4', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
   return (
     <div className="space-y-6">
@@ -238,14 +238,14 @@ export function CityComparison({ data, maxCities = 5 }: CityComparisonProps) {
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={barChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
                   <XAxis dataKey="name" />
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="AQI" fill="#8884d8" />
-                  <Bar dataKey="PM2.5" fill="#82ca9d" />
-                  <Bar dataKey="PM10" fill="#ffc658" />
+                  <Bar dataKey="AQI" fill="#ef4444" />
+                  <Bar dataKey="PM2.5" fill="#06b6d4" />
+                  <Bar dataKey="PM10" fill="#f59e0b" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>

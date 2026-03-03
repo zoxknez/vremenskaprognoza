@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n } from '@/lib/i18n/context';
+import { LanguageSelector } from '@/components/i18n/LanguageSelector';
 import {
   CloudSun,
   Menu,
@@ -128,8 +129,8 @@ export function Navigation() {
               </Link>
 
               {/* Desktop Navigation */}
-              <div className="hidden lg:flex items-center gap-1">
-                {navLinks.slice(0, 5).map((link) => {
+              <div className="hidden lg:flex items-center gap-1 overflow-x-auto scrollbar-hide max-w-[52rem]">
+                {navLinks.map((link) => {
                   const isActive = pathname === link.href;
                   return (
                     <Link
@@ -155,6 +156,10 @@ export function Navigation() {
 
               {/* Right Actions */}
               <div className="flex items-center gap-2">
+                <div className="hidden md:block">
+                  <LanguageSelector />
+                </div>
+
                 {/* Search Button */}
                 <button 
                   onClick={() => setSearchOpen(true)}

@@ -8,16 +8,12 @@ import {
   ArrowLeft,
   TrendingUp,
   TrendingDown,
-  BarChart3,
-  Calendar,
   Download,
-  Filter,
   ChevronDown,
   MapPin,
   FileSpreadsheet,
   FileText,
   Check,
-  X,
   RefreshCw,
   Clock,
   CalendarDays,
@@ -261,7 +257,7 @@ function StatistikaContent() {  const [selectedCity, setSelectedCity] = useState
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0e17]">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <main className="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
@@ -270,7 +266,7 @@ function StatistikaContent() {  const [selectedCity, setSelectedCity] = useState
             animate={{ opacity: 1, y: 0 }}
             className="mb-8"
           >
-            <Link href="/" className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-4 transition-colors">
+            <Link href="/" className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60 rounded-lg">
               <ArrowLeft size={20} />
               <span>Nazad na početnu</span>
             </Link>
@@ -304,8 +300,11 @@ function StatistikaContent() {  const [selectedCity, setSelectedCity] = useState
                 {/* Date Range Selector */}
                 <div className="relative" ref={datePickerRef}>
                   <button
+                    type="button"
                     onClick={() => setShowDatePicker(!showDatePicker)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-300 hover:bg-slate-800 hover:border-slate-600 transition-all"
+                    aria-haspopup="menu"
+                    aria-expanded={showDatePicker}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-300 hover:bg-slate-800 hover:border-slate-600 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60"
                   >
                     <CalendarDays size={18} />
                     <span className="hidden sm:inline">{DATE_PRESETS.find(p => p.id === dateRange)?.label || dateRange}</span>
@@ -324,6 +323,7 @@ function StatistikaContent() {  const [selectedCity, setSelectedCity] = useState
                           {DATE_PRESETS.filter(p => p.id !== 'custom').map((preset) => (
                             <button
                               key={preset.id}
+                              type="button"
                               onClick={() => handleDateRangeChange(preset.id)}
                               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
                                 dateRange === preset.id
@@ -344,19 +344,20 @@ function StatistikaContent() {  const [selectedCity, setSelectedCity] = useState
                               type="date"
                               value={customDateStart}
                               onChange={(e) => setCustomDateStart(e.target.value)}
-                              className="flex-1 px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-primary-500"
+                              className="flex-1 px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
                             />
                             <input
                               type="date"
                               value={customDateEnd}
                               onChange={(e) => setCustomDateEnd(e.target.value)}
-                              className="flex-1 px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-primary-500"
+                              className="flex-1 px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
                             />
                           </div>
                           <button
+                            type="button"
                             onClick={applyCustomDateRange}
                             disabled={!customDateStart || !customDateEnd}
-                            className="w-full py-2 bg-primary-500 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-600 transition-colors"
+                            className="w-full py-2 bg-primary-500 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60"
                           >
                             Primeni
                           </button>
@@ -368,9 +369,11 @@ function StatistikaContent() {  const [selectedCity, setSelectedCity] = useState
 
                 {/* Refresh Button */}
                 <button
+                  type="button"
                   onClick={refreshData}
                   disabled={isLoading}
-                  className="p-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all disabled:opacity-50"
+                  aria-label="Osvezi podatke"
+                  className="p-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60"
                   title="Osveži podatke"
                 >
                   <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
@@ -379,8 +382,11 @@ function StatistikaContent() {  const [selectedCity, setSelectedCity] = useState
                 {/* Export Button */}
                 <div className="relative" ref={exportRef}>
                   <button
+                    type="button"
                     onClick={() => setShowExportMenu(!showExportMenu)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-medium"
+                    aria-haspopup="menu"
+                    aria-expanded={showExportMenu}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60"
                   >
                     <Download size={18} />
                     <span className="hidden sm:inline">Izvezi</span>
@@ -396,6 +402,7 @@ function StatistikaContent() {  const [selectedCity, setSelectedCity] = useState
                         className="absolute top-full right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden"
                       >
                         <button
+                          type="button"
                           onClick={exportToCSV}
                           className="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 transition-colors"
                         >
@@ -403,6 +410,7 @@ function StatistikaContent() {  const [selectedCity, setSelectedCity] = useState
                           Izvezi kao CSV
                         </button>
                         <button
+                          type="button"
                           onClick={exportToPDF}
                           className="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 transition-colors"
                         >
@@ -426,7 +434,7 @@ function StatistikaContent() {  const [selectedCity, setSelectedCity] = useState
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 flex items-center justify-center"
               >
-                <div className="bg-slate-800 rounded-2xl p-6 flex flex-col items-center gap-4">
+                <div className="bg-slate-800/90 border border-slate-700 rounded-2xl p-6 flex flex-col items-center gap-4 shadow-2xl">
                   <RefreshCw size={32} className="text-primary-400 animate-spin" />
                   <p className="text-white">Učitavanje podataka...</p>
                 </div>
@@ -442,7 +450,7 @@ function StatistikaContent() {  const [selectedCity, setSelectedCity] = useState
             className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
           >
             {records.map((record, index) => (
-              <div key={index} className="neo-card p-5">
+              <div key={index} className="neo-card p-5 transition-all duration-300 hover:border-slate-600/60">
                 <div className="flex items-start justify-between mb-2">
                   <span className="text-slate-400 text-sm">{record.label}</span>
                   {record.trend === 'up' ? (
@@ -543,7 +551,7 @@ function StatistikaContent() {  const [selectedCity, setSelectedCity] = useState
             >
               <h2 className="text-xl font-semibold text-white mb-6">Poređenje po godinama</h2>
               
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto custom-scrollbar">
                 <table className="w-full">
                   <thead>
                     <tr className="text-left text-slate-500 text-sm border-b border-slate-800">
@@ -613,7 +621,7 @@ function StatistikaContent() {  const [selectedCity, setSelectedCity] = useState
             <h2 className="text-xl font-semibold text-white mb-6">Analiza trendova</h2>
             
             <div className="grid sm:grid-cols-3 gap-6">
-              <div className="p-4 bg-slate-800/30 rounded-xl">
+              <div className="p-4 bg-slate-800/30 border border-slate-700/40 rounded-xl">
                 <div className="flex items-center gap-2 mb-3">
                   <TrendingUp className="text-red-400" size={20} />
                   <span className="text-slate-400">Temperatura</span>
@@ -625,7 +633,7 @@ function StatistikaContent() {  const [selectedCity, setSelectedCity] = useState
                 </div>
               </div>
               
-              <div className="p-4 bg-slate-800/30 rounded-xl">
+              <div className="p-4 bg-slate-800/30 border border-slate-700/40 rounded-xl">
                 <div className="flex items-center gap-2 mb-3">
                   <TrendingDown className="text-green-400" size={20} />
                   <span className="text-slate-400">Kvalitet vazduha</span>
@@ -637,7 +645,7 @@ function StatistikaContent() {  const [selectedCity, setSelectedCity] = useState
                 </div>
               </div>
               
-              <div className="p-4 bg-slate-800/30 rounded-xl">
+              <div className="p-4 bg-slate-800/30 border border-slate-700/40 rounded-xl">
                 <div className="flex items-center gap-2 mb-3">
                   <TrendingUp className="text-blue-400" size={20} />
                   <span className="text-slate-400">Padavine</span>
@@ -655,3 +663,6 @@ function StatistikaContent() {  const [selectedCity, setSelectedCity] = useState
     </div>
   );
 }
+
+
+

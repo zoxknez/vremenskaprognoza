@@ -36,7 +36,6 @@ export async function sendPushNotification(
 ): Promise<boolean> {
   const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
   const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-  const vapidEmail = process.env.VAPID_EMAIL || 'mailto:admin@example.com';
 
   if (!vapidPublicKey || !vapidPrivateKey) {
     logger.warn('VAPID keys not configured');
@@ -51,7 +50,7 @@ export async function sendPushNotification(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'TTL': '86400',
+        TTL: '86400',
       },
       body: JSON.stringify(payload),
     });
@@ -64,9 +63,9 @@ export async function sendPushNotification(
 }
 
 // Alert types
-export type AlertType = 
-  | 'aqi_high' 
-  | 'aqi_very_high' 
+export type AlertType =
+  | 'aqi_high'
+  | 'aqi_very_high'
   | 'aqi_hazardous'
   | 'improvement'
   | 'weather_warning'
@@ -87,78 +86,78 @@ export function createAlertPayload(
   switch (type) {
     case 'aqi_high':
       return {
-        title: '⚠️ Povećano zagađenje',
-        body: `${cityName}: AQI je ${aqi}. Osjetljive grupe trebaju ograničiti boravak vani.`,
+        title: 'Povecano zagadjenje',
+        body: `${cityName}: AQI je ${aqi}. Osetljive grupe treba da ogranice boravak napolju.`,
         icon: '/icons/icon-192x192.png',
         badge: '/icons/badge-72x72.png',
         tag: `aqi-alert-${cityName}`,
         data: { type, cityName, aqi },
         actions: [
           { action: 'view', title: 'Pogledaj detalje' },
-          { action: 'dismiss', title: 'Odbaci' }
-        ]
+          { action: 'dismiss', title: 'Zatvori' },
+        ],
       };
 
     case 'aqi_very_high':
       return {
-        title: '🔴 Visoko zagađenje!',
-        body: `${cityName}: AQI je ${aqi}! Izbjegavajte aktivnosti na otvorenom.`,
+        title: 'Visoko zagadjenje',
+        body: `${cityName}: AQI je ${aqi}. Izbegavajte aktivnosti na otvorenom.`,
         icon: '/icons/icon-192x192.png',
         badge: '/icons/badge-72x72.png',
         tag: `aqi-alert-${cityName}`,
         data: { type, cityName, aqi },
         actions: [
           { action: 'view', title: 'Pogledaj detalje' },
-          { action: 'health', title: 'Zdravstveni savjeti' }
-        ]
+          { action: 'health', title: 'Zdravstveni saveti' },
+        ],
       };
 
     case 'aqi_hazardous':
       return {
-        title: '☠️ OPASNO ZAGAĐENJE!',
-        body: `${cityName}: AQI je ${aqi}! Ostanite u zatvorenom prostoru!`,
+        title: 'Opasno zagadjenje',
+        body: `${cityName}: AQI je ${aqi}. Ostanite u zatvorenom prostoru.`,
         icon: '/icons/icon-192x192.png',
         badge: '/icons/badge-72x72.png',
         tag: `aqi-emergency-${cityName}`,
         data: { type, cityName, aqi },
         actions: [
           { action: 'view', title: 'Pogledaj detalje' },
-          { action: 'health', title: 'Hitni savjeti' }
-        ]
+          { action: 'health', title: 'Hitni saveti' },
+        ],
       };
 
     case 'improvement':
       return {
-        title: '✅ Kvaliteta zraka poboljšana',
+        title: 'Kvalitet vazduha poboljsan',
         body: `${cityName}: AQI je pao sa ${previousAqi} na ${aqi}.`,
         icon: '/icons/icon-192x192.png',
         tag: `aqi-improvement-${cityName}`,
-        data: { type, cityName, aqi, previousAqi }
+        data: { type, cityName, aqi, previousAqi },
       };
 
     case 'weather_warning':
       return {
-        title: '🌫️ Meteorološko upozorenje',
-        body: message || `${cityName}: Vremenski uvjeti pogoduju nakupljanju zagađenja.`,
+        title: 'Meteorolosko upozorenje',
+        body: message || `${cityName}: Vremenski uslovi pogoduju nakupljanju zagadjenja.`,
         icon: '/icons/icon-192x192.png',
         tag: `weather-warning-${cityName}`,
-        data: { type, cityName }
+        data: { type, cityName },
       };
 
     case 'daily_summary':
       return {
-        title: '📊 Dnevni pregled kvalitete zraka',
-        body: message || `Prosječni AQI za ${cityName}: ${aqi}`,
+        title: 'Dnevni pregled kvaliteta vazduha',
+        body: message || `Prosecan AQI za ${cityName}: ${aqi}`,
         icon: '/icons/icon-192x192.png',
         tag: 'daily-summary',
-        data: { type, cityName, aqi }
+        data: { type, cityName, aqi },
       };
 
     default:
       return {
-        title: 'Obavijest o kvaliteti zraka',
+        title: 'Obavestenje o kvalitetu vazduha',
         body: message || `Nove informacije za ${cityName}`,
-        icon: '/icons/icon-192x192.png'
+        icon: '/icons/icon-192x192.png',
       };
   }
 }
@@ -190,3 +189,4 @@ export function removeSubscription(userId: string): void {
 export function getAllSubscriptions(): PushSubscription[] {
   return Array.from(subscriptions.values());
 }
+

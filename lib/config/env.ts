@@ -14,14 +14,15 @@ const envSchema = z.object({
   AQICN_API_KEY: z.string().optional(), // Air Quality Index China
   AIRVISUAL_API_KEY: z.string().optional(), // IQAir AirVisual
   OPENAQ_API_KEY: z.string().optional(), // OpenAQ
-  
+  GOOGLE_API_KEY: z.string().optional(), // Google Cloud Air Quality API
+
   // Database
   DATABASE_URL: z.string().url().optional(), // Neon PostgreSQL
   POSTGRES_URL: z.string().url().optional(), // Vercel Postgres
-  
+
   // External Services
   ALLTHINGSTALK_TOKEN: z.string().optional(),
-  
+
   // Vercel
   VERCEL_URL: z.string().optional(),
   NEXT_PUBLIC_VERCEL_URL: z.string().optional(),
@@ -61,9 +62,9 @@ export function getEnv(): Env {
 /**
  * Type-safe helper za dobijanje API keys
  */
-export function getApiKey(service: 'openweather' | 'waqi' | 'aqicn' | 'airvisual' | 'openaq'): string | undefined {
+export function getApiKey(service: 'openweather' | 'waqi' | 'aqicn' | 'airvisual' | 'openaq' | 'google'): string | undefined {
   const env = getEnv();
-  
+
   switch (service) {
     case 'openweather':
       return env.OPENWEATHER_API_KEY;
@@ -75,6 +76,8 @@ export function getApiKey(service: 'openweather' | 'waqi' | 'aqicn' | 'airvisual
       return env.AIRVISUAL_API_KEY;
     case 'openaq':
       return env.OPENAQ_API_KEY;
+    case 'google':
+      return env.GOOGLE_API_KEY;
     default:
       return undefined;
   }

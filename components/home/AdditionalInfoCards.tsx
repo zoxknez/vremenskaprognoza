@@ -9,7 +9,6 @@ interface AdditionalInfoCardsProps {
     aqi: number | null | undefined;
 }
 
-// UV Index description helper
 function getUVDescription(uv: number): { text: string; color: string } {
     if (uv <= 2) return { text: 'Nizak', color: 'text-green-400' };
     if (uv <= 5) return { text: 'Umeren', color: 'text-yellow-400' };
@@ -18,52 +17,57 @@ function getUVDescription(uv: number): { text: string; color: string } {
     return { text: 'Ekstreman', color: 'text-purple-400' };
 }
 
-// Health advice helper
-function getHealthAdvice(aqi: number): { text: string; color: string; icon: string } {
+function getHealthAdvice(aqi: number): { text: string; color: string; badge: string } {
     if (aqi <= 50) {
         return {
             text: 'Kvalitet vazduha je dobar. Idealno za aktivnosti na otvorenom.',
             color: 'text-green-400',
-            icon: '😊'
+            badge: 'OK',
         };
     }
+
     if (aqi <= 100) {
         return {
-            text: 'Kvalitet vazduha je prihvatljiv. Osetljive osobe bi trebalo da ograniče produženi boravak napolju.',
+            text: 'Kvalitet vazduha je prihvatljiv. Osetljive osobe treba da ogranice duzi boravak napolju.',
             color: 'text-yellow-400',
-            icon: '😐'
+            badge: 'PAZI',
         };
     }
+
     if (aqi <= 150) {
         return {
             text: 'Nezdrav za osetljive grupe. Smanjite aktivnosti na otvorenom.',
             color: 'text-orange-400',
-            icon: '😷'
+            badge: 'UPOZ',
         };
     }
+
     if (aqi <= 200) {
         return {
             text: 'Nezdrav. Svi bi trebalo da smanje aktivnosti na otvorenom.',
             color: 'text-red-400',
-            icon: '🤒'
+            badge: 'RIZIK',
         };
     }
+
     if (aqi <= 300) {
         return {
             text: 'Veoma nezdrav. Izbegavajte aktivnosti na otvorenom.',
             color: 'text-purple-400',
-            icon: '🚨'
+            badge: 'VISOK',
         };
     }
+
     return {
         text: 'Opasno. Ostanite u zatvorenom prostoru.',
         color: 'text-rose-500',
-        icon: '☠️'
+        badge: 'OPASNO',
     };
 }
 
 export function AdditionalInfoCards({ sunData, uvIndex, aqi }: AdditionalInfoCardsProps) {
     const hasAnyData = sunData || uvIndex !== null || (aqi && aqi > 0);
+    const healthAdvice = aqi && aqi > 0 ? getHealthAdvice(aqi) : null;
 
     if (!hasAnyData) {
         return null;
@@ -76,7 +80,6 @@ export function AdditionalInfoCards({ sunData, uvIndex, aqi }: AdditionalInfoCar
             transition={{ duration: 0.5, delay: 0.35 }}
             className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12"
         >
-            {/* Sunrise/Sunset Card */}
             {sunData && (
                 <div className="rounded-2xl bg-slate-800/30 border border-slate-700/50 p-5 sm:p-6">
                     <h3 className="text-sm font-medium text-slate-400 mb-4 flex items-center gap-2">
@@ -107,12 +110,11 @@ export function AdditionalInfoCards({ sunData, uvIndex, aqi }: AdditionalInfoCar
                 </div>
             )}
 
-            {/* UV Index Card */}
             {uvIndex !== null && (
                 <div className="rounded-2xl bg-slate-800/30 border border-slate-700/50 p-5 sm:p-6">
                     <h3 className="text-sm font-medium text-slate-400 mb-4 flex items-center gap-2">
                         <Sun className="w-4 h-4 text-yellow-400" />
-                        UV Indeks
+                        UV indeks
                     </h3>
                     <div className="flex items-center justify-between">
                         <div>
@@ -133,17 +135,18 @@ export function AdditionalInfoCards({ sunData, uvIndex, aqi }: AdditionalInfoCar
                 </div>
             )}
 
-            {/* Health Advice Card - SAMO ako postoje AQI podaci */}
-            {aqi && aqi > 0 && (
+            {healthAdvice && (
                 <div className="rounded-2xl bg-slate-800/30 border border-slate-700/50 p-5 sm:p-6">
                     <h3 className="text-sm font-medium text-slate-400 mb-4 flex items-center gap-2">
                         <Shield className="w-4 h-4 text-emerald-400" />
                         Zdravstveni savet
                     </h3>
                     <div className="flex items-start gap-3">
-                        <span className="text-2xl">{getHealthAdvice(aqi).icon}</span>
-                        <p className={`text-sm ${getHealthAdvice(aqi).color} leading-relaxed`}>
-                            {getHealthAdvice(aqi).text}
+                        <span className="text-[10px] font-semibold tracking-wide px-2 py-1 rounded-md bg-slate-900/70 text-slate-200 border border-slate-700">
+                            {healthAdvice.badge}
+                        </span>
+                        <p className={`text-sm ${healthAdvice.color} leading-relaxed`}>
+                            {healthAdvice.text}
                         </p>
                     </div>
                 </div>

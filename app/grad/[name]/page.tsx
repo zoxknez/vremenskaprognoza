@@ -30,7 +30,11 @@ import {
 import { POPULAR_CITIES } from '@/lib/api/balkan-countries';
 import { translateWeatherDescription, getWindDirection } from '@/lib/utils/weather-translations';
 import { getAQILabel, getAQIColor, getAQIBgGradient } from '@/lib/utils/aqi';
+import { PollenCard } from '@/components/pollen/PollenCard';
+import { UVIndexCard } from '@/components/weather/UVIndexCard';
+import { useToast } from '@/lib/hooks/useToast';
 
+// Interfaces remain the same...
 interface WeatherData {
   temp: number;
   feelsLike: number;
@@ -71,10 +75,10 @@ interface CityData {
 
 function WeatherIcon({ iconCode, size = 24, className = '' }: { iconCode: string; size?: number; className?: string }) {
   const iconProps = { size, className };
-  
+
   // OpenWeatherMap icon codes
   if (iconCode.startsWith('01')) {
-    return iconCode.endsWith('d') 
+    return iconCode.endsWith('d')
       ? <Sun {...iconProps} className={`text-yellow-400 ${className}`} />
       : <Moon {...iconProps} className={`text-indigo-400 ${className}`} />;
   }
@@ -90,28 +94,29 @@ function WeatherIcon({ iconCode, size = 24, className = '' }: { iconCode: string
   if (iconCode.startsWith('13')) {
     return <Cloud {...iconProps} className={`text-white ${className}`} />;
   }
-  
+
   return <Sun {...iconProps} className={`text-yellow-400 ${className}`} />;
 }
 
 function formatTime(timestamp: number): string {
-  return new Date(timestamp * 1000).toLocaleTimeString('sr-RS', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  return new Date(timestamp * 1000).toLocaleTimeString('sr-RS', {
+    hour: '2-digit',
+    minute: '2-digit'
   });
 }
 
 function getDayName(dateStr: string, index: number): string {
   if (index === 0) return 'Danas';
-  const days = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
+  const days = ['Ned', 'Pon', 'Uto', 'Sre', 'Cet', 'Pet', 'Sub'];
   const date = new Date(dateStr);
   return days[date.getDay()] ?? '';
 }
 
 export default function CityPage() {
+  const { toast } = useToast();
   const params = useParams();
   const citySlug = (params?.name as string)?.toLowerCase();
-  
+
   const [cityData, setCityData] = useState<CityData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -123,20 +128,34 @@ export default function CityPage() {
     const resolveCity = async () => {
       if (!citySlug) return;
 
+      // Decode and clean the slug
+      let cleanedName = decodeURIComponent(citySlug);
+
+      // Extract just the city name from complex strings like "Ruse - Vazrazhdane, Bulgaria"
+      // Remove everything after comma (country)
+      if (cleanedName.includes(',')) {
+        cleanedName = cleanedName.split(',')[0].trim();
+      }
+
+      // Remove district/neighborhood info (after dash)
+      if (cleanedName.includes(' - ')) {
+        cleanedName = cleanedName.split(' - ')[0].trim();
+      }
+
       // 1. Try POPULAR_CITIES
       const popular = POPULAR_CITIES.find(
-        c => c.name.toLowerCase() === citySlug || 
-             c.name.toLowerCase().replace(/\s+/g, '-') === citySlug
+        c => c.name.toLowerCase() === cleanedName.toLowerCase() ||
+          c.name.toLowerCase().replace(/\s+/g, '-') === cleanedName.toLowerCase()
       );
-      
+
       if (popular) {
         setResolvedCity(popular);
         return;
       }
 
-      // 2. Try Geocoding
+      // 2. Try Geocoding with cleaned name
       try {
-        const res = await fetch(`/api/geocoding?q=${encodeURIComponent(citySlug)}&limit=1`);
+        const res = await fetch(`/api/geocoding?q=${encodeURIComponent(cleanedName)}&limit=1`);
         if (res.ok) {
           const data = await res.json();
           if (data.results && data.results.length > 0) {
@@ -153,20 +172,20 @@ export default function CityPage() {
       } catch (e) {
         console.error("Geocoding error:", e);
       }
-      
-      setError('Grad nije pronađen');
+
+      setError('Grad nije pronadjen');
       setIsLoading(false);
     };
 
     resolveCity();
   }, [citySlug]);
-  
+
   const fetchCityData = useCallback(async () => {
     if (!resolvedCity) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // Parallel fetch for better performance
       const [weatherRes, forecastRes, aqiRes] = await Promise.all([
@@ -174,12 +193,12 @@ export default function CityPage() {
         fetch(`/api/forecast?lat=${resolvedCity.lat}&lon=${resolvedCity.lon}`),
         fetch(`/api/air-quality?lat=${resolvedCity.lat}&lon=${resolvedCity.lon}`).catch(() => null)
       ]);
-      
-      if (!weatherRes.ok) throw new Error('Greška pri učitavanju vremena');
+
+      if (!weatherRes.ok) throw new Error('Greska pri ucitavanju vremena');
       const weatherJson = await weatherRes.json();
-      
+
       const forecastJson = forecastRes.ok ? await forecastRes.json() : { daily: [] };
-      
+
       // Process AQI
       let aqi: number | null = null;
       if (aqiRes && aqiRes.ok) {
@@ -190,7 +209,7 @@ export default function CityPage() {
           // Ignore JSON parse error
         }
       }
-      
+
       const weather: WeatherData | null = weatherJson.main ? {
         temp: Math.round(weatherJson.main.temp),
         feelsLike: Math.round(weatherJson.main.feels_like),
@@ -206,7 +225,7 @@ export default function CityPage() {
         sunset: weatherJson.sys?.sunset || 0,
         uvi: weatherJson.uvi,
       } : null;
-      
+
       const forecast: ForecastDay[] = (forecastJson.daily || forecastJson.list || [])
         .slice(0, 7)
         .map((day: Record<string, unknown>, index: number) => ({
@@ -218,7 +237,7 @@ export default function CityPage() {
           description: (day.weather as { description?: string }[])?.[0]?.description || '',
           pop: Math.round(((day.pop as number) || 0) * 100),
         }));
-      
+
       setCityData({
         name: resolvedCity.name,
         country: resolvedCity.country,
@@ -230,20 +249,20 @@ export default function CityPage() {
         loading: false,
         error: null,
       });
-      
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Došlo je do greške');
+      setError(err instanceof Error ? err.message : 'Doslo je do greske');
     } finally {
       setIsLoading(false);
     }
   }, [resolvedCity]);
-  
+
   useEffect(() => {
     if (resolvedCity) {
       fetchCityData();
     }
   }, [resolvedCity, fetchCityData]);
-  
+
   // Check favorite status
   useEffect(() => {
     if (resolvedCity) {
@@ -258,27 +277,27 @@ export default function CityPage() {
       }
     }
   }, [resolvedCity]);
-  
+
   const toggleFavorite = () => {
     if (!resolvedCity) return;
-    
+
     const stored = localStorage.getItem('weather_favorites');
     let favorites: { id: string; name: string; country: string; lat: number; lon: number }[] = [];
-    
+
     try {
       favorites = stored ? JSON.parse(stored) : [];
     } catch {
       favorites = [];
     }
-    
+
     const exists = favorites.findIndex(f => f.name === resolvedCity.name);
-    
+
     if (exists >= 0) {
       favorites.splice(exists, 1);
       setIsFavorite(false);
     } else {
-      favorites.push({ 
-        id: resolvedCity.name.toLowerCase(), 
+      favorites.push({
+        id: resolvedCity.name.toLowerCase(),
         name: resolvedCity.name,
         country: resolvedCity.country,
         lat: resolvedCity.lat,
@@ -286,10 +305,10 @@ export default function CityPage() {
       });
       setIsFavorite(true);
     }
-    
+
     localStorage.setItem('weather_favorites', JSON.stringify(favorites));
   };
-  
+
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -304,54 +323,62 @@ export default function CityPage() {
     } else {
       // Fallback: copy to clipboard
       await navigator.clipboard.writeText(window.location.href);
-      alert('Link kopiran u clipboard!');
+      toast({
+        title: 'Link je kopiran',
+        description: 'Mozete ga odmah podeliti.',
+      });
     }
   };
-  
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0e17] flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-primary-500 animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Učitavanje podataka...</p>
+          <p className="text-slate-300">Ucitavanje podataka...</p>
         </div>
       </div>
     );
   }
-  
+
   if (error || !cityData || !cityData.weather) {
     return (
-      <div className="min-h-screen bg-[#0a0e17] flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
         <div className="text-center max-w-md">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-white mb-2">
-            {error || 'Grad nije pronađen'}
+            {error || 'Grad nije pronadjen'}
           </h1>
           <p className="text-slate-400 mb-6">
-            Nismo uspeli da pronađemo podatke za ovaj grad.
+            Nismo uspeli da pronadjemo podatke za ovaj grad.
           </p>
           <div className="flex gap-3 justify-center">
-            <button 
+            <button
+              type="button"
               onClick={fetchCityData}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors inline-flex items-center gap-2"
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors inline-flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/70"
             >
               <RefreshCw size={18} />
-              Pokušaj ponovo
+              Pokusaj ponovo
             </button>
             <Link href="/" className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors">
-              Nazad na početnu
+              Nazad na pocetnu
             </Link>
           </div>
         </div>
       </div>
     );
   }
-  
+
   const { weather, forecast, aqi } = cityData;
 
   return (
-    <div className="min-h-screen bg-[#0a0e17]">
-      <main className="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-32 right-10 h-72 w-72 rounded-full bg-sky-500/10 blur-3xl" />
+        <div className="absolute bottom-0 left-0 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
+      </div>
+      <main className="relative z-10 pt-24 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <motion.div
@@ -363,7 +390,7 @@ export default function CityPage() {
               <ArrowLeft size={20} />
               <span>Nazad</span>
             </Link>
-            
+
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2 text-slate-400 mb-2">
@@ -375,20 +402,32 @@ export default function CityPage() {
                   {cityData.lat.toFixed(4)}°N, {cityData.lon.toFixed(4)}°E
                 </p>
               </div>
-              
+
               <div className="flex items-center gap-2">
-                <button 
+                <button
+                  type="button"
                   onClick={toggleFavorite}
-                  className={`btn-ghost ${isFavorite ? 'text-yellow-400' : ''}`}
+                  aria-label={isFavorite ? 'Ukloni grad iz sacuvanih' : 'Sacuvaj grad u favorite'}
+                  className={`btn-ghost focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/70 ${isFavorite ? 'text-yellow-400' : ''}`}
                 >
                   <Star size={18} fill={isFavorite ? 'currentColor' : 'none'} />
-                  <span className="hidden sm:inline">{isFavorite ? 'Sačuvano' : 'Sačuvaj'}</span>
+                  <span className="hidden sm:inline">{isFavorite ? 'Sacuvano' : 'Sacuvaj'}</span>
                 </button>
-                <button onClick={handleShare} className="btn-secondary">
+                <button
+                  type="button"
+                  aria-label="Podeli grad"
+                  onClick={handleShare}
+                  className="btn-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/70"
+                >
                   <Share2 size={18} />
                   <span className="hidden sm:inline">Podeli</span>
                 </button>
-                <button onClick={fetchCityData} className="btn-ghost">
+                <button
+                  type="button"
+                  aria-label="Osvezi podatke"
+                  onClick={fetchCityData}
+                  className="btn-ghost focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/70"
+                >
                   <RefreshCw size={18} />
                 </button>
               </div>
@@ -404,7 +443,7 @@ export default function CityPage() {
           >
             {/* Background decoration */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-radial from-primary-500/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
-            
+
             <div className="relative flex flex-col lg:flex-row lg:items-center gap-8">
               {/* Temperature & Icon */}
               <div className="flex items-center gap-6">
@@ -434,7 +473,7 @@ export default function CityPage() {
                     <span>{getWindDirection(weather.windDeg)}</span>
                   </div>
                 </div>
-                
+
                 <div className="stat-card">
                   <div className="flex items-center gap-2 text-slate-500 mb-1">
                     <Droplets size={16} />
@@ -442,7 +481,7 @@ export default function CityPage() {
                   </div>
                   <p className="text-xl font-bold text-white">{weather.humidity}%</p>
                 </div>
-                
+
                 <div className="stat-card">
                   <div className="flex items-center gap-2 text-slate-500 mb-1">
                     <Gauge size={16} />
@@ -450,7 +489,7 @@ export default function CityPage() {
                   </div>
                   <p className="text-xl font-bold text-white">{weather.pressure} hPa</p>
                 </div>
-                
+
                 <div className="stat-card">
                   <div className="flex items-center gap-2 text-slate-500 mb-1">
                     <Eye size={16} />
@@ -495,10 +534,10 @@ export default function CityPage() {
                   </div>
                 )}
               </div>
-              
+
               {aqi !== null && (
-                <Link 
-                  href="/kvalitet-vazduha" 
+                <Link
+                  href="/kvalitet-vazduha"
                   className={`flex items-center gap-3 px-5 py-3 rounded-xl border bg-gradient-to-r ${getAQIBgGradient(aqi)} border-slate-700/50 transition-colors hover:opacity-80`}
                 >
                   <span className={`text-2xl font-bold ${getAQIColor(aqi)}`}>{aqi}</span>
@@ -517,20 +556,19 @@ export default function CityPage() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="neo-card p-6"
+              className="neo-card p-6 mb-8"
             >
               <div className="flex items-center gap-2 mb-6">
                 <Calendar size={20} className="text-slate-400" />
                 <h2 className="text-xl font-semibold text-white">7-dnevna prognoza</h2>
               </div>
-              
+
               <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
                 {forecast.map((day, index) => (
-                  <div 
+                  <div
                     key={index}
-                    className={`flex flex-col items-center p-4 rounded-xl ${
-                      index === 0 ? 'bg-primary-600/10 border border-primary-500/20' : 'bg-slate-800/30 hover:bg-slate-800/50'
-                    } transition-colors`}
+                    className={`flex flex-col items-center p-4 rounded-xl ${index === 0 ? 'bg-primary-600/10 border border-primary-500/20' : 'bg-slate-800/30 hover:bg-slate-800/50'
+                      } transition-colors`}
                   >
                     <span className={`font-medium mb-2 ${index === 0 ? 'text-primary-400' : 'text-white'}`}>
                       {day.day}
@@ -552,12 +590,42 @@ export default function CityPage() {
             </motion.div>
           )}
 
-          {/* City Info */}
+          {/* Pollen Data */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="mb-8"
+          >
+            <PollenCard
+              lat={cityData.lat}
+              lon={cityData.lon}
+              cityName={cityData.name}
+              region={cityData.country}
+            />
+          </motion.div>
+
+          {/* UV Index */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="mt-8 flat-card p-6"
+            className="mb-8"
+          >
+            <UVIndexCard
+              lat={cityData.lat}
+              lon={cityData.lon}
+              cityName={cityData.name}
+              region={cityData.country}
+            />
+          </motion.div>
+
+          {/* City Info */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="flat-card p-6"
           >
             <h2 className="text-lg font-semibold text-white mb-4">Informacije o gradu</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">

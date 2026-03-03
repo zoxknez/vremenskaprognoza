@@ -13,6 +13,14 @@ interface SelectedCity {
     country: string;
 }
 
+interface RankingCity {
+    name: string;
+    country: string;
+    aqi: number;
+    lat?: number;
+    lon?: number;
+}
+
 interface UseHomePageDataReturn {
     // State
     selectedCity: SelectedCity | undefined;
@@ -20,8 +28,8 @@ interface UseHomePageDataReturn {
     forecast: ForecastData[];
     otherCities: CityData[];
     allCities: CityData[];
-    topCleanCities: any[];
-    topPollutedCities: any[];
+    topCleanCities: RankingCity[];
+    topPollutedCities: RankingCity[];
     loading: boolean;
     error: string | null;
     currentTime: string;
@@ -47,8 +55,8 @@ export function useHomePageData(): UseHomePageDataReturn {
     const [forecast, setForecast] = useState<ForecastData[]>([]);
     const [otherCities, setOtherCities] = useState<CityData[]>([]);
     const [allCities, setAllCities] = useState<CityData[]>([]);
-    const [topCleanCities, setTopCleanCities] = useState<any[]>([]);
-    const [topPollutedCities, setTopPollutedCities] = useState<any[]>([]);
+    const [topCleanCities, setTopCleanCities] = useState<RankingCity[]>([]);
+    const [topPollutedCities, setTopPollutedCities] = useState<RankingCity[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [currentTime, setCurrentTime] = useState('');
@@ -115,8 +123,13 @@ export function useHomePageData(): UseHomePageDataReturn {
                 } catch {
                     setSelectedCity(POPULAR_CITIES[0]);
                 }
-            } catch (error: any) {
-                if (error?.code === 1) {
+            } catch (error: unknown) {
+                if (
+                    typeof error === 'object' &&
+                    error !== null &&
+                    'code' in error &&
+                    (error as GeolocationPositionError).code === 1
+                ) {
                     setLocationPermission('denied');
                 }
                 setSelectedCity(POPULAR_CITIES[0]);
@@ -173,7 +186,7 @@ export function useHomePageData(): UseHomePageDataReturn {
             const weatherPromise = fetch(
                 `/api/weather?lat=${city.lat}&lon=${city.lon}&city=${encodeURIComponent(city.name)}`
             ).then(res => {
-                if (!res.ok) throw new Error('Greška pri učitavanju vremenske prognoze');
+                if (!res.ok) throw new Error('Greska pri ucitavanju vremenske prognoze');
                 return res.json();
             });
 
@@ -270,7 +283,7 @@ export function useHomePageData(): UseHomePageDataReturn {
 
         } catch (err) {
             console.error('Error fetching weather data:', err);
-            setError(err instanceof Error ? err.message : 'Greška pri učitavanju podataka');
+            setError(err instanceof Error ? err.message : 'Greska pri ucitavanju podataka');
         } finally {
             setLoading(false);
         }
@@ -360,3 +373,4 @@ export function useHomePageData(): UseHomePageDataReturn {
         refreshWeather,
     };
 }
+

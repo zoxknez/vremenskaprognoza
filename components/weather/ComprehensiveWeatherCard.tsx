@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -181,8 +181,8 @@ export function ComprehensiveWeatherCard({ data }: ComprehensiveWeatherCardProps
             <p className="text-blue-100 text-sm">{location.country}</p>
           </div>
           <div className="text-right">
-            <div className="text-5xl font-bold">{current.temperature}°</div>
-            <div className="text-blue-100">Osjeća se kao {current.feelsLike}°</div>
+            <div className="text-5xl font-bold">{current.temperature} deg</div>
+            <div className="text-blue-100">Oseca se kao {current.feelsLike} deg</div>
           </div>
         </div>
         <div className="flex items-center gap-2 mt-2">
@@ -207,28 +207,28 @@ export function ComprehensiveWeatherCard({ data }: ComprehensiveWeatherCardProps
                 icon={<Wind className="h-5 w-5 text-blue-500" />}
                 label="Vjetar"
                 value={`${current.wind.speed} m/s`}
-                subValue={`Udari do ${current.wind.gust} m/s • ${current.wind.directionText}`}
+                subValue={`Udari do ${current.wind.gust} m/s | ${current.wind.directionText}`}
               />
               <DetailCard 
                 icon={<Droplets className="h-5 w-5 text-cyan-500" />}
-                label="Vlažnost"
+                label="Vlaznost"
                 value={`${current.humidity}%`}
-                subValue={`Rosište: ${current.dewPoint}°C`}
+                subValue={`Rosiste: ${current.dewPoint} C`}
               />
               <DetailCard 
                 icon={<Gauge className="h-5 w-5 text-purple-500" />}
                 label="Pritisak"
                 value={`${current.pressure} hPa`}
-                subValue={current.pressureTrend === 'rising' ? '↑ Raste' : current.pressureTrend === 'falling' ? '↓ Pada' : '→ Stabilan'}
+                subValue={current.pressureTrend === 'rising' ? 'Raste' : current.pressureTrend === 'falling' ? 'Pada' : 'Stabilan'}
               />
               <DetailCard 
-                icon={<Eye className="h-5 w-5 text-gray-500" />}
+                icon={<Eye className="h-5 w-5 text-slate-400" />}
                 label="Vidljivost"
                 value={`${(current.visibility / 1000).toFixed(1)} km`}
               />
               <DetailCard 
-                icon={<Cloud className="h-5 w-5 text-gray-400" />}
-                label="Oblačnost"
+                icon={<Cloud className="h-5 w-5 text-slate-400" />}
+                label="Oblacnost"
                 value={`${current.cloudCover}%`}
               />
               <DetailCard 
@@ -247,7 +247,7 @@ export function ComprehensiveWeatherCard({ data }: ComprehensiveWeatherCardProps
                 icon={<Navigation className="h-5 w-5 text-indigo-500" style={{ transform: `rotate(${current.wind.direction}deg)` }} />}
                 label="Smjer vjetra"
                 value={current.wind.directionText}
-                subValue={`${current.wind.direction}°`}
+                subValue={`${current.wind.direction} deg`}
               />
             </div>
 
@@ -269,7 +269,7 @@ export function ComprehensiveWeatherCard({ data }: ComprehensiveWeatherCardProps
                       <span>{new Date(current.sun.sunset).toLocaleTimeString('hr', { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Dužina dana</span>
+                      <span>Duzina dana</span>
                       <span className="font-medium">{current.sun.dayLength}</span>
                     </div>
                   </div>
@@ -315,7 +315,7 @@ export function ComprehensiveWeatherCard({ data }: ComprehensiveWeatherCardProps
                     {new Date(hour.time).toLocaleTimeString('hr', { hour: '2-digit' })}
                   </div>
                   <WeatherIcon icon={hour.icon} size={32} />
-                  <div className="font-semibold">{Math.round(hour.temperature)}°</div>
+                  <div className="font-semibold">{Math.round(hour.temperature)} deg</div>
                   {hour.precipProbability > 0 && (
                     <div className="text-xs text-blue-500">{hour.precipProbability}%</div>
                   )}
@@ -343,8 +343,8 @@ export function ComprehensiveWeatherCard({ data }: ComprehensiveWeatherCardProps
                     )}
                   </div>
                   <div className="text-right">
-                    <span className="font-semibold">{day.temperature.max}°</span>
-                    <span className="text-muted-foreground ml-2">{day.temperature.min}°</span>
+                    <span className="font-semibold">{day.temperature.max} deg</span>
+                    <span className="text-muted-foreground ml-2">{day.temperature.min} deg</span>
                   </div>
                 </div>
               ))}
@@ -357,14 +357,14 @@ export function ComprehensiveWeatherCard({ data }: ComprehensiveWeatherCardProps
               <CardContent className="p-4">
                 <h4 className="font-semibold mb-3 flex items-center gap-2">
                   <Waves className="h-5 w-5" />
-                  Utjecaj na kvalitetu zraka
+                  Uticaj na kvalitet vazduha
                 </h4>
                 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span>Indeks raspršivanja</span>
+                    <span>Indeks rasprsivanja</span>
                     <div className="flex items-center gap-2">
-                      <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="w-32 h-2 bg-slate-700/60 rounded-full overflow-hidden">
                         <div 
                           className={`h-full ${current.airQualityImpact.dispersionIndex >= 7 ? 'bg-green-500' : current.airQualityImpact.dispersionIndex >= 4 ? 'bg-yellow-500' : 'bg-red-500'}`}
                           style={{ width: `${current.airQualityImpact.dispersionIndex * 10}%` }}
@@ -432,7 +432,7 @@ export function ComprehensiveWeatherCard({ data }: ComprehensiveWeatherCardProps
         {/* Metadata */}
         <div className="mt-4 pt-4 border-t text-xs text-muted-foreground flex items-center justify-between">
           <span>Izvor: {data.metadata.source}</span>
-          <span>Ažurirano: {new Date(data.metadata.lastUpdated).toLocaleString('hr')}</span>
+          <span>Azurirano: {new Date(data.metadata.lastUpdated).toLocaleString('hr')}</span>
         </div>
       </CardContent>
     </Card>
@@ -484,7 +484,7 @@ export function WeatherComparison({ cities }: WeatherComparisonProps) {
               <tr className="border-b">
                 <th className="text-left p-2">Grad</th>
                 <th className="p-2">Temp</th>
-                <th className="p-2">Vlažnost</th>
+                <th className="p-2">Vlaznost</th>
                 <th className="p-2">Vjetar</th>
                 <th className="p-2">UV</th>
                 <th className="p-2">Padavine</th>
@@ -496,7 +496,7 @@ export function WeatherComparison({ cities }: WeatherComparisonProps) {
                 <tr key={city.location.city} className="border-b hover:bg-muted/50">
                   <td className="p-2 font-medium">{city.location.city}</td>
                   <td className="p-2 text-center">
-                    <span className="font-semibold">{city.current.temperature}°</span>
+                    <span className="font-semibold">{city.current.temperature} deg</span>
                   </td>
                   <td className="p-2 text-center">{city.current.humidity}%</td>
                   <td className="p-2 text-center">{city.current.wind.speed} m/s</td>
@@ -517,3 +517,4 @@ export function WeatherComparison({ cities }: WeatherComparisonProps) {
     </Card>
   );
 }
+

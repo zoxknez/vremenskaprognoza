@@ -30,8 +30,8 @@ export async function POST(request: NextRequest) {
           aqiCategory: data.aqiCategory || 'moderate',
           timestamp: data.timestamp || new Date().toISOString(),
           recommendations: data.recommendations || [
-            'Pratite kvalitetu zraka',
-            'Izbjegavajte dugotrajne aktivnosti vani ako je AQI visok'
+            'Pratite kvalitet vazduha',
+            'Izbegavajte dugotrajne aktivnosti napolju ako je AQI visok'
           ],
           dashboardUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://airquality.app'
         });

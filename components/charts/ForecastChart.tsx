@@ -85,18 +85,20 @@ export function ForecastChart({ hourlyData, dailyData }: ForecastChartProps) {
           <AreaChart data={chartData}>
             <defs>
               <linearGradient id="colorAqi" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
+                <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
             <XAxis
               dataKey="time"
+              stroke="#94a3b8"
               tick={{ fontSize: 12 }}
               interval="preserveStartEnd"
             />
             <YAxis
               domain={[0, 'dataMax + 20']}
+              stroke="#94a3b8"
               tick={{ fontSize: 12 }}
             />
             <Tooltip
@@ -104,7 +106,7 @@ export function ForecastChart({ hourlyData, dailyData }: ForecastChartProps) {
                 if (active && payload && payload.length) {
                   const data = payload[0].payload;
                   return (
-                    <div className="bg-background border rounded-lg shadow-lg p-3">
+                    <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-lg p-3">
                       <p className="font-semibold">{data.date} {data.time}</p>
                       <p className="text-2xl font-bold" style={{ color: getGradientColor(data.aqi) }}>
                         AQI: {data.aqi}
@@ -124,7 +126,7 @@ export function ForecastChart({ hourlyData, dailyData }: ForecastChartProps) {
             <Area
               type="monotone"
               dataKey="aqi"
-              stroke="#8884d8"
+              stroke="#06b6d4"
               fillOpacity={1}
               fill="url(#colorAqi)"
               strokeWidth={2}

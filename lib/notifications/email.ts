@@ -49,7 +49,7 @@ async function sendViaResend(options: EmailOptions): Promise<boolean> {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -80,7 +80,7 @@ async function sendViaSendGrid(options: EmailOptions): Promise<boolean> {
     const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -128,19 +128,16 @@ export function createAlertEmailTemplate(data: AlertEmailData): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Upozorenje o kvaliteti zraka</title>
+  <title>Upozorenje o kvalitetu vazduha</title>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
   <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    
-    <!-- Header -->
     <div style="background: ${color}; padding: 30px; text-align: center;">
       <h1 style="color: white; margin: 0; font-size: 24px;">
-        ⚠️ Upozorenje o kvaliteti zraka
+        Upozorenje o kvalitetu vazduha
       </h1>
     </div>
-    
-    <!-- Content -->
+
     <div style="padding: 30px;">
       <div style="text-align: center; margin-bottom: 30px;">
         <div style="font-size: 18px; color: #666; margin-bottom: 10px;">
@@ -150,36 +147,32 @@ export function createAlertEmailTemplate(data: AlertEmailData): string {
           ${data.aqi}
         </div>
         <div style="font-size: 16px; color: #888; text-transform: uppercase;">
-          AQI Indeks
+          AQI indeks
         </div>
       </div>
-      
-      <!-- Recommendations -->
+
       <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
         <h3 style="margin: 0 0 15px; color: #333;">Preporuke:</h3>
         <ul style="margin: 0; padding-left: 20px; color: #666;">
-          ${data.recommendations.map(r => `<li style="margin-bottom: 8px;">${r}</li>`).join('')}
+          ${data.recommendations.map((r) => `<li style="margin-bottom: 8px;">${r}</li>`).join('')}
         </ul>
       </div>
-      
-      <!-- CTA Button -->
+
       <div style="text-align: center;">
-        <a href="${data.dashboardUrl}" 
+        <a href="${data.dashboardUrl}"
            style="display: inline-block; background: ${color}; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: 600;">
           Pogledaj detalje
         </a>
       </div>
-      
-      <!-- Timestamp -->
+
       <div style="text-align: center; margin-top: 20px; color: #888; font-size: 14px;">
-        Vrijeme mjerenja: ${new Date(data.timestamp).toLocaleString('sr-Latn-RS')}
+        Vreme merenja: ${new Date(data.timestamp).toLocaleString('sr-Latn-RS')}
       </div>
     </div>
-    
-    <!-- Footer -->
+
     <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #eee;">
       <p style="margin: 0; color: #888; font-size: 12px;">
-        Primili ste ovu poruku jer ste se pretplatili na obavijesti o kvaliteti zraka.
+        Primili ste ovu poruku jer ste pretplaceni na obavestenja o kvalitetu vazduha.
         <br>
         <a href="${data.dashboardUrl}/settings" style="color: ${color};">Upravljaj pretplatom</a>
       </p>
@@ -193,20 +186,20 @@ export function createAlertEmailTemplate(data: AlertEmailData): string {
 // Create text version for email
 export function createAlertEmailText(data: AlertEmailData): string {
   return `
-UPOZORENJE O KVALITETI ZRAKA
+UPOZORENJE O KVALITETU VAZDUHA
 
 Lokacija: ${data.cityName}
-AQI Indeks: ${data.aqi}
-Vrijeme: ${new Date(data.timestamp).toLocaleString('sr-Latn-RS')}
+AQI indeks: ${data.aqi}
+Vreme: ${new Date(data.timestamp).toLocaleString('sr-Latn-RS')}
 
 PREPORUKE:
 ${data.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
-Pogledajte više na: ${data.dashboardUrl}
+Pogledajte vise na: ${data.dashboardUrl}
 
 ---
-Ova poruka je automatski generirana.
-Za odjavu posjetite: ${data.dashboardUrl}/settings
+Ova poruka je automatski generisana.
+Za odjavu posetite: ${data.dashboardUrl}/settings
   `.trim();
 }
 
@@ -217,8 +210,7 @@ export async function sendAirQualityAlert(
 ): Promise<boolean> {
   const html = createAlertEmailTemplate(data);
   const text = createAlertEmailText(data);
-
-  const subject = `⚠️ ${data.cityName}: AQI ${data.aqi} - ${getAQICategoryName(data.aqiCategory)}`;
+  const subject = `Upozorenje: ${data.cityName} AQI ${data.aqi} - ${getAQICategoryName(data.aqiCategory)}`;
 
   return sendEmail({
     to: email,
@@ -231,7 +223,7 @@ export async function sendAirQualityAlert(
 function getAQICategoryName(category: string): string {
   const names: Record<string, string> = {
     good: 'Dobar',
-    moderate: 'Umjeren',
+    moderate: 'Umeren',
     sensitive: 'Nezdrav za osetljive',
     unhealthy: 'Nezdrav',
     veryUnhealthy: 'Vrlo nezdrav',
@@ -255,23 +247,23 @@ export async function sendDailyDigest(
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f5f5f5;">
   <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; padding: 30px;">
-    <h1 style="color: #333; margin: 0 0 20px;">📊 Dnevni pregled kvalitete zraka</h1>
-    
+    <h1 style="color: #333; margin: 0 0 20px;">Dnevni pregled kvaliteta vazduha</h1>
+
     <div style="background: #f0f9ff; border-radius: 8px; padding: 20px; margin-bottom: 20px; text-align: center;">
-      <div style="font-size: 14px; color: #666;">Prosječni AQI danas</div>
+      <div style="font-size: 14px; color: #666;">Prosecan AQI danas</div>
       <div style="font-size: 48px; font-weight: bold; color: #0ea5e9;">${avgAqi}</div>
     </div>
-    
-    <h3 style="color: #333;">Vaši gradovi:</h3>
+
+    <h3 style="color: #333;">Vasi gradovi:</h3>
     <table style="width: 100%; border-collapse: collapse;">
-      ${cities.map(city => `
+      ${cities.map((city) => `
         <tr style="border-bottom: 1px solid #eee;">
           <td style="padding: 12px 0;">${city.name}</td>
           <td style="padding: 12px 0; text-align: right; font-weight: bold;">${city.aqi}</td>
         </tr>
       `).join('')}
     </table>
-    
+
     <p style="color: #888; font-size: 12px; margin-top: 30px; text-align: center;">
       Datum: ${new Date().toLocaleDateString('sr-Latn-RS')}
     </p>
@@ -282,7 +274,7 @@ export async function sendDailyDigest(
 
   return sendEmail({
     to: email,
-    subject: `📊 Dnevni AQI pregled - Prosječni AQI: ${avgAqi}`,
+    subject: `Dnevni AQI pregled - Prosecan AQI: ${avgAqi}`,
     html,
   });
 }

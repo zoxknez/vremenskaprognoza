@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,17 +24,11 @@ export function NotificationSettings({ userId = 'anonymous' }: NotificationSetti
   const { isInstalled, requestNotificationPermission } = usePWA();
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
   const [email, setEmail] = useState('');
+  const [storedEmail, setStoredEmail] = useState('');
   const [emailSubscribed, setEmailSubscribed] = useState(false);
   const [pushSubscribed, setPushSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Check notification permission on mount
-  useState(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      setNotificationPermission(Notification.permission);
-    }
-  });
 
   // Notification preferences
   const [preferences, setPreferences] = useState({
@@ -43,6 +37,32 @@ export function NotificationSettings({ userId = 'anonymous' }: NotificationSetti
     immediateAlerts: true,
     weatherWarnings: true,
   });
+
+  // Initialize permission and persisted settings on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    }
+
+    const savedEmail = localStorage.getItem('airquality_email');
+    if (savedEmail) {
+      setStoredEmail(savedEmail);
+      setEmail(savedEmail);
+      setEmailSubscribed(true);
+    }
+
+    const savedPrefs = localStorage.getItem('airquality_email_prefs');
+    if (savedPrefs) {
+      try {
+        const parsed = JSON.parse(savedPrefs) as Partial<typeof preferences>;
+        setPreferences((prev) => ({ ...prev, ...parsed }));
+      } catch {
+        // Ignore malformed saved preferences
+      }
+    }
+  }, []);
 
   const handlePushSubscribe = async () => {
     setLoading(true);
@@ -53,7 +73,7 @@ export function NotificationSettings({ userId = 'anonymous' }: NotificationSetti
       const permission = await requestNotificationPermission();
       
       if (permission !== 'granted') {
-        setError('Morate dozvoliti notifikacije u pregledniku');
+        setError('Morate dozvoliti notifikacije u pretraživaču');
         return;
       }
 
@@ -81,7 +101,7 @@ export function NotificationSettings({ userId = 'anonymous' }: NotificationSetti
 
       setPushSubscribed(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Greška pri pretplati');
+      setError(err instanceof Error ? err.message : 'Greska pri pretplati');
     } finally {
       setLoading(false);
     }
@@ -104,8 +124,8 @@ export function NotificationSettings({ userId = 'anonymous' }: NotificationSetti
       });
 
       setPushSubscribed(false);
-    } catch (err) {
-      setError('Greška pri odjavi');
+    } catch {
+      setError('Greska pri odjavi');
     } finally {
       setLoading(false);
     }
@@ -124,21 +144,29 @@ export function NotificationSettings({ userId = 'anonymous' }: NotificationSetti
       // In production, save to database
       // For now, just mark as subscribed
       setEmailSubscribed(true);
+      setStoredEmail(email);
       
       // Save to localStorage as demo
       localStorage.setItem('airquality_email', email);
       localStorage.setItem('airquality_email_prefs', JSON.stringify(preferences));
     } catch (err) {
-      setError('Greška pri pretplati na email');
+      setError('Greska pri pretplati na email');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleEmailUnsubscribe = () => {
+    setEmailSubscribed(false);
+    setStoredEmail('');
+    localStorage.removeItem('airquality_email');
+    localStorage.removeItem('airquality_email_prefs');
+  };
+
   const testNotification = async () => {
     if (Notification.permission === 'granted') {
       new Notification('Test notifikacija', {
-        body: 'Ovo je test notifikacija za kvalitetu zraka',
+        body: 'Ovo je test notifikacija za kvalitet vazduha',
         icon: '/icons/icon-192x192.png',
       });
     }
@@ -149,7 +177,7 @@ export function NotificationSettings({ userId = 'anonymous' }: NotificationSetti
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Bell className="h-5 w-5" />
-          Postavke obavijesti
+          Postavke obaveštenja
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -166,7 +194,7 @@ export function NotificationSettings({ userId = 'anonymous' }: NotificationSetti
           </div>
           
           <p className="text-sm text-muted-foreground">
-            Primajte instant obavijesti kada se kvaliteta zraka promijeni.
+            Primajte instant obaveštenja kada se kvalitet vazduha promeni.
           </p>
 
           {!isInstalled && (
@@ -184,7 +212,7 @@ export function NotificationSettings({ userId = 'anonymous' }: NotificationSetti
                 onClick={handlePushSubscribe} 
                 disabled={loading || notificationPermission === 'denied'}
               >
-                {loading ? 'Učitavanje...' : 'Uključi notifikacije'}
+                {loading ? 'Ucitavanje...' : 'Ukljuci notifikacije'}
               </Button>
             ) : (
               <>
@@ -192,7 +220,7 @@ export function NotificationSettings({ userId = 'anonymous' }: NotificationSetti
                   Test
                 </Button>
                 <Button variant="destructive" onClick={handlePushUnsubscribe} disabled={loading}>
-                  Isključi
+                  Iskljuci
                 </Button>
               </>
             )}
@@ -200,7 +228,7 @@ export function NotificationSettings({ userId = 'anonymous' }: NotificationSetti
 
           {notificationPermission === 'denied' && (
             <p className="text-sm text-red-500">
-              Notifikacije su blokirane. Omogućite ih u postavkama preglednika.
+              Notifikacije su blokirane. Omogucite ih u podesavanjima pretrazivaca.
             </p>
           )}
         </div>
@@ -212,7 +240,7 @@ export function NotificationSettings({ userId = 'anonymous' }: NotificationSetti
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Mail className="h-5 w-5 text-green-500" />
-              <span className="font-medium">Email obavijesti</span>
+              <span className="font-medium">Email obavestenja</span>
             </div>
             <Badge variant={emailSubscribed ? 'default' : 'outline'}>
               {emailSubscribed ? 'Aktivno' : 'Neaktivno'}
@@ -237,11 +265,11 @@ export function NotificationSettings({ userId = 'anonymous' }: NotificationSetti
             </div>
           ) : (
             <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <span className="text-sm">{email || localStorage.getItem('airquality_email')}</span>
+              <span className="text-sm">{storedEmail || email}</span>
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={() => setEmailSubscribed(false)}
+                onClick={handleEmailUnsubscribe}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -254,7 +282,7 @@ export function NotificationSettings({ userId = 'anonymous' }: NotificationSetti
         {/* Preferences */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <Settings className="h-5 w-5 text-gray-500" />
+            <Settings className="h-5 w-5 text-slate-400" />
             <span className="font-medium">Postavke</span>
           </div>
 
@@ -314,3 +342,5 @@ export function NotificationSettings({ userId = 'anonymous' }: NotificationSetti
     </Card>
   );
 }
+
+

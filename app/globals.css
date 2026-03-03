@@ -1,36 +1,79 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* Dark theme colors */
-  --bg-primary: #0a0e17;
-  --bg-secondary: #0f1420;
-  --bg-tertiary: #1a1f2e;
-  --bg-card: #12161f;
-  
-  /* Text colors */
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
+  /* Shared app colors (legacy helpers still used across components) */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-tertiary: #e2e8f0;
+  --bg-card: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
   --text-muted: #64748b;
-  
-  /* Accent colors */
   --accent-blue: #3b82f6;
   --accent-cyan: #06b6d4;
   --accent-emerald: #10b981;
   --accent-amber: #f59e0b;
-  
-  /* Gradients */
   --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
   --gradient-warm: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
   --gradient-cool: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+
+  /* Theme tokens for ui/* components */
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 217 91% 60%;
+}
+
+.dark {
+  --bg-primary: #0a0e17;
+  --bg-secondary: #0f1420;
+  --bg-tertiary: #1a1f2e;
+  --bg-card: #12161f;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --background: 224 39% 7%;
+  --foreground: 210 40% 98%;
+  --card: 222 35% 12%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222 35% 12%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 217 33% 17%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20% 65%;
+  --accent: 217 33% 17%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217 33% 20%;
+  --input: 217 33% 20%;
+  --ring: 217 91% 60%;
 }
 
 @layer base {
   * {
-    @apply border-slate-800;
+    @apply border-border;
   }
   
   html {
@@ -38,13 +81,20 @@
   }
   
   body {
-    @apply bg-[#0a0e17] text-slate-100 antialiased overflow-x-hidden;
+    @apply bg-background text-foreground antialiased overflow-x-hidden;
     font-feature-settings: "rlig" 1, "calt" 1;
     background-image: 
+      radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.06), transparent 55%),
+      radial-gradient(circle at 0% 50%, rgba(6, 182, 212, 0.05), transparent 55%),
+      radial-gradient(circle at 100% 50%, rgba(16, 185, 129, 0.04), transparent 55%);
+    background-attachment: fixed;
+  }
+
+  .dark body {
+    background-image:
       radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.15), transparent 50%),
       radial-gradient(circle at 0% 50%, rgba(6, 182, 212, 0.1), transparent 50%),
       radial-gradient(circle at 100% 50%, rgba(168, 85, 247, 0.1), transparent 50%);
-    background-attachment: fixed;
   }
 
   /* Custom scrollbar */
@@ -248,6 +298,35 @@
     display: none;
   }
 
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-700/60 rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-600/80;
+  }
+
+  .glass-effect {
+    @apply bg-slate-900/65 backdrop-blur-xl border border-slate-700/40;
+  }
+
+  .drop-shadow-glow {
+    filter: drop-shadow(0 0 12px rgba(6, 182, 212, 0.4));
+  }
+
+  .h-safe-area-inset-bottom {
+    height: env(safe-area-inset-bottom, 0px);
+  }
+
   /* Fade in animation */
   .fade-in {
     animation: fadeIn 0.5s ease-out;
@@ -271,6 +350,17 @@
   /* Number counter animation */
   .animate-number {
     animation: counterUp 1s ease-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

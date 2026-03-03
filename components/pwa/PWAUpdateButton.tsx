@@ -65,7 +65,7 @@ export function PWAUpdateButton() {
     <button
       onClick={handleUpdate}
       disabled={isUpdating}
-      className="fixed bottom-20 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+      className="fixed bottom-20 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-500 to-cyan-500 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       title="Nova verzija dostupna - klikni za ažuriranje"
     >
       <RefreshCw className={`w-5 h-5 ${isUpdating ? 'animate-spin' : ''}`} />

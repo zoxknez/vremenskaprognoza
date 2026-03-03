@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Github, ExternalLink, Cloud, Heart, MapPin, BarChart3, Wind, Mail } from 'lucide-react';
+import { Github, ExternalLink, Cloud, Heart, MapPin, BarChart3, Wind, Mail, Sparkles } from 'lucide-react';
 
 const footerLinks = {
   main: [
@@ -25,7 +25,7 @@ export function Footer() {
           <div className="md:col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-4">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center">
-                <Cloud className="text-white" size={20} />
+                <Sparkles className="text-white" size={20} />
               </div>
               <span className="font-bold text-xl text-white">
                 VremeVazduh

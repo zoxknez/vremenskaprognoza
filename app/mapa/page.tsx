@@ -12,7 +12,6 @@ import {
   Cloud,
   Droplets,
   X,
-  MapPin,
   Maximize2,
   Minimize2,
   Navigation,
@@ -27,6 +26,7 @@ import {
 
 import CitySearch, { SearchResult } from '@/components/common/CitySearch';
 import { POPULAR_CITIES } from '@/lib/api/balkan-countries';
+import { useToast } from '@/lib/hooks/useToast';
 
 // Dynamically import Leaflet component with no SSR
 const LeafletMap = dynamic(
@@ -37,7 +37,7 @@ const LeafletMap = dynamic(
       <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-slate-400">Učitavanje mape...</p>
+          <p className="text-slate-400">Ucitavanje mape...</p>
         </div>
       </div>
     )
@@ -77,12 +77,12 @@ interface LayerConfig {
 }
 
 const LAYER_CONFIGS: LayerConfig[] = [
-  { id: 'temperature', icon: Thermometer, label: 'Temperatura', shortLabel: 'Temp', colors: ['#60A5FA', '#22D3EE', '#34D399', '#FBBF24', '#F97316'], unit: '°C' },
-  { id: 'aqi', icon: Wind, label: 'Kvalitet Vazduha', shortLabel: 'AQI', colors: ['#22C55E', '#EAB308', '#F97316', '#EF4444', '#A855F7'], unit: '' },
-  { id: 'humidity', icon: Droplets, label: 'Vlažnost', shortLabel: 'Vlažnost', colors: ['#60A5FA', '#3B82F6', '#2563EB', '#1D4ED8', '#1E40AF'], unit: '%' },
+  { id: 'temperature', icon: Thermometer, label: 'Temperatura', shortLabel: 'Temp', colors: ['#60A5FA', '#22D3EE', '#34D399', '#FBBF24', '#F97316'], unit: 'C' },
+  { id: 'aqi', icon: Wind, label: 'Kvalitet vazduha', shortLabel: 'AQI', colors: ['#22C55E', '#EAB308', '#F97316', '#EF4444', '#A855F7'], unit: '' },
+  { id: 'humidity', icon: Droplets, label: 'Vlaznost', shortLabel: 'Vlaznost', colors: ['#60A5FA', '#3B82F6', '#2563EB', '#1D4ED8', '#1E40AF'], unit: '%' },
   { id: 'wind', icon: Cloud, label: 'Vetar', shortLabel: 'Vetar', colors: ['#60A5FA', '#3B82F6', '#2563EB', '#1D4ED8', '#1E40AF'], unit: 'km/h' },
-  { id: 'precipitation', icon: CloudRain, label: 'Padavine', shortLabel: 'Kiša', colors: ['#93C5FD', '#60A5FA', '#3B82F6', '#2563EB', '#1D4ED8'], unit: 'mm' },
-  { id: 'clouds', icon: Cloudy, label: 'Oblačnost', shortLabel: 'Oblaci', colors: ['#F1F5F9', '#CBD5E1', '#94A3B8', '#64748B', '#475569'], unit: '%' },
+  { id: 'precipitation', icon: CloudRain, label: 'Padavine', shortLabel: 'Kisa', colors: ['#93C5FD', '#60A5FA', '#3B82F6', '#2563EB', '#1D4ED8'], unit: 'mm' },
+  { id: 'clouds', icon: Cloudy, label: 'Oblacnost', shortLabel: 'Oblaci', colors: ['#F1F5F9', '#CBD5E1', '#94A3B8', '#64748B', '#475569'], unit: '%' },
 ];
 
 function getAqiColor(aqi: number): string {
@@ -94,6 +94,7 @@ function getAqiColor(aqi: number): string {
 }
 
 export default function MapPage() {
+  const { toast } = useToast();
   const [locations, setLocations] = useState<LocationData[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(null);
   const [activeLayer, setActiveLayer] = useState<MapLayer>('temperature');
@@ -131,7 +132,11 @@ export default function MapPage() {
   // Geolocation
   const handleLocateMe = useCallback(async () => {
     if (!navigator.geolocation) {
-      alert('Geolokacija nije podržana u vašem pretraživaču');
+      toast({
+        variant: "destructive",
+        title: "Geolokacija nije podrzana",
+        description: "Ovaj pretrazivac ne podrzava pristup lokaciji.",
+      });
       return;
     }
 
@@ -176,12 +181,16 @@ export default function MapPage() {
       },
       (error) => {
         console.error('Geolocation error:', error);
-        alert('Nije moguće dobiti vašu lokaciju. Proverite podešavanja.');
+        toast({
+          variant: "destructive",
+          title: "Lokacija nije dostupna",
+          description: "Proverite dozvolu za lokaciju u podesavanjima pretrazivaca.",
+        });
         setIsLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
     );
-  }, []);
+  }, [toast]);
 
   // Safety timeout to prevent infinite loading screen
   useEffect(() => {
@@ -319,7 +328,7 @@ export default function MapPage() {
                <CitySearch 
                   onCitySelect={handleSearchSelect} 
                   className="w-full" 
-                  placeholder="Pronađi grad na mapi..."
+                  placeholder="Pronadji grad na mapi..."
                   showLocateButton={false}
                />
             </div>
@@ -344,7 +353,7 @@ export default function MapPage() {
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${showLayerPanel ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
               >
                 <Settings2 size={16} />
-                <span className="hidden sm:inline">Više</span>
+                <span className="hidden sm:inline">Vise</span>
               </button>
             </div>
 
@@ -409,7 +418,7 @@ export default function MapPage() {
                 >
                   <div className="flex items-center gap-3">
                     {showMarkers ? <Eye size={18} /> : <EyeOff size={18} />}
-                    <span>Prikaži markere</span>
+                    <span>Prikazi markere</span>
                   </div>
                   <div className={`w-10 h-6 rounded-full transition-colors ${showMarkers ? 'bg-primary-500' : 'bg-slate-600'}`}>
                     <div className={`w-5 h-5 bg-white rounded-full shadow-md transition-transform mt-0.5 ${showMarkers ? 'translate-x-4 ml-0.5' : 'translate-x-0.5'}`} />
@@ -426,7 +435,7 @@ export default function MapPage() {
             <div className="absolute inset-0 flex items-center justify-center bg-slate-900 z-20">
               <div className="flex flex-col items-center gap-4">
                 <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                <p className="text-slate-400">Učitavanje mape...</p>
+                <p className="text-slate-400">Ucitavanje mape...</p>
               </div>
             </div>
           )}
@@ -446,8 +455,9 @@ export default function MapPage() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={toggleFullscreen}
+              aria-label={isFullscreen ? 'Izadji iz celog ekrana' : 'Prikazi ceo ekran'}
               className="p-3 bg-slate-900/90 backdrop-blur-xl rounded-xl border border-slate-800/50 text-slate-300 hover:text-white hover:bg-slate-800 transition-all shadow-lg"
-              title={isFullscreen ? 'Izađi iz celog ekrana' : 'Ceo ekran'}
+              title={isFullscreen ? 'Izadji iz celog ekrana' : 'Ceo ekran'}
             >
               {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
             </motion.button>
@@ -458,6 +468,7 @@ export default function MapPage() {
               whileTap={{ scale: 0.95 }}
               onClick={handleLocateMe}
               disabled={isLocating}
+              aria-label="Pronadji moju lokaciju"
               className={`p-3 bg-slate-900/90 backdrop-blur-xl rounded-xl border border-slate-800/50 transition-all shadow-lg ${
                 isLocating 
                   ? 'text-primary-400 border-primary-500/50' 
@@ -465,7 +476,7 @@ export default function MapPage() {
                     ? 'text-primary-400 hover:bg-slate-800' 
                     : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
-              title="Pronađi moju lokaciju"
+              title="Pronadji moju lokaciju"
             >
               {isLocating ? (
                 <Loader2 size={20} className="animate-spin" />
@@ -482,6 +493,7 @@ export default function MapPage() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setMapCenter([userLocation.lat, userLocation.lon])}
+                aria-label="Centriraj mapu na moju lokaciju"
                 className="p-3 bg-slate-900/90 backdrop-blur-xl rounded-xl border border-slate-800/50 text-slate-300 hover:text-white hover:bg-slate-800 transition-all shadow-lg"
                 title="Centriraj na moju lokaciju"
               >
@@ -494,7 +506,7 @@ export default function MapPage() {
           {dataLoading && !isLoading && (
             <div className="absolute top-4 right-20 z-20 bg-slate-900/80 backdrop-blur px-4 py-2 rounded-full text-sm text-slate-300 border border-slate-700 shadow-lg flex items-center gap-2">
               <div className="w-3 h-3 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-              Učitavanje podataka...
+              Ucitavanje podataka...
             </div>
           )}
 
@@ -554,7 +566,7 @@ export default function MapPage() {
                       </div>
                       <span>Temperatura</span>
                     </div>
-                    <span className="text-2xl font-bold text-white">{selectedLocation.temp}°</span>
+                    <span className="text-2xl font-bold text-white">{selectedLocation.temp}&deg;</span>
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -577,7 +589,7 @@ export default function MapPage() {
                       <div className="p-2 bg-slate-800 rounded-lg">
                         <Droplets size={18} className="text-cyan-400" />
                       </div>
-                      <span>Vlažnost</span>
+                      <span>Vlaznost</span>
                     </div>
                     <span className="text-white font-medium">{selectedLocation.humidity}%</span>
                   </div>
@@ -607,3 +619,4 @@ export default function MapPage() {
     </div>
   );
 }
+

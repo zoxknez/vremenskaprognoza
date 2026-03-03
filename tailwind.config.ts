@@ -10,6 +10,31 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
         // Primary dark palette - deep space theme
         slate: {
           850: '#1a1f2e',
@@ -47,6 +72,8 @@ const config: Config = {
         },
         // Primary brand colors
         primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
           50: '#EFF6FF',
           100: '#DBEAFE',
           200: '#BFDBFE',
@@ -60,6 +87,8 @@ const config: Config = {
         },
         // Accent colors
         accent: {
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
           cyan: '#06B6D4',
           emerald: '#10B981',
           amber: '#F59E0B',

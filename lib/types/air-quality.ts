@@ -1,4 +1,4 @@
-export type AirQualitySource = 'sepa' | 'openaq' | 'sensor-community' | 'allthingstalk' | 'waqi' | 'openweather' | 'aqicn' | 'airvisual';
+export type AirQualitySource = 'sepa' | 'openaq' | 'sensor-community' | 'allthingstalk' | 'waqi' | 'openweather' | 'aqicn' | 'airvisual' | 'google';
 
 // Unified AQI Category type - US EPA standard
 // good: 0-50, moderate: 51-100, sensitive: 101-150, unhealthy: 151-200, veryUnhealthy: 201-300, hazardous: 301+

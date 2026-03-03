@@ -46,22 +46,22 @@ export function AirQualityChart({ data, parameter = 'pm25' }: AirQualityChartPro
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" />
-            <YAxis />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
+            <XAxis dataKey="time" stroke="#94a3b8" />
+            <YAxis stroke="#94a3b8" />
             <Tooltip />
             <Legend />
             <Line
               type="monotone"
               dataKey="value"
-              stroke="#8884d8"
+              stroke="#06b6d4"
               name={parameterLabels[parameter]}
               strokeWidth={2}
             />
             <Line
               type="monotone"
               dataKey="aqi"
-              stroke="#82ca9d"
+              stroke="#f97316"
               name="AQI"
               strokeWidth={2}
             />

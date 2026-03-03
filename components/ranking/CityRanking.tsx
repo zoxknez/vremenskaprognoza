@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,7 +29,7 @@ export function CityRanking({ data }: CityRankingProps) {
   const [sortBy, setSortBy] = useState<'aqi' | 'pm25' | 'pm10'>('aqi');
 
   const rankedCities = useMemo(() => {
-    // Grupiši po gradovima
+    // Grupisi po gradovima
     const cityGroups = new Map<string, AirQualityData[]>();
     
     data.forEach((item) => {
@@ -40,7 +40,7 @@ export function CityRanking({ data }: CityRankingProps) {
       cityGroups.get(key)!.push(item);
     });
 
-    // Izračunaj prosječne vrijednosti sa validacijom
+    // Izracunaj prosecne vrednosti sa validacijom
     const cityData = Array.from(cityGroups.entries()).map(([, items]) => {
       // Filter valid AQI values
       const validItems = items.filter(i => 
@@ -63,7 +63,7 @@ export function CityRanking({ data }: CityRankingProps) {
         .filter(i => i.parameters.pm10 !== undefined && !isNaN(i.parameters.pm10!))
         .map(i => i.parameters.pm10!);
 
-      // Određivanje trenda na osnovu raspona vrednosti (ne random)
+      // Odredjivanje trenda na osnovu raspona vrednosti (ne random)
       const aqiRange = maxAqi - minAqi;
       const trend: 'up' | 'down' | 'stable' = 
         aqiRange > 30 ? (avgAqi > (minAqi + maxAqi) / 2 ? 'up' : 'down') : 'stable';
@@ -123,7 +123,7 @@ export function CityRanking({ data }: CityRankingProps) {
   const TrendIcon = ({ trend }: { trend: 'up' | 'down' | 'stable' }) => {
     if (trend === 'up') return <TrendingUp className="h-4 w-4 text-red-500" />;
     if (trend === 'down') return <TrendingDown className="h-4 w-4 text-green-500" />;
-    return <Minus className="h-4 w-4 text-gray-500" />;
+    return <Minus className="h-4 w-4 text-slate-500" />;
   };
 
   const RankingList = ({ cities, type }: { cities: RankedCity[], type: 'cleanest' | 'polluted' }) => (
@@ -132,7 +132,7 @@ export function CityRanking({ data }: CityRankingProps) {
         const qualityColor = 
           city.dataQuality === 'excellent' ? 'text-green-500' :
           city.dataQuality === 'good' ? 'text-blue-500' :
-          city.dataQuality === 'fair' ? 'text-yellow-500' : 'text-gray-500';
+          city.dataQuality === 'fair' ? 'text-yellow-500' : 'text-slate-500';
         
         return (
           <div
@@ -142,7 +142,7 @@ export function CityRanking({ data }: CityRankingProps) {
             <div className={`
               w-8 h-8 rounded-full flex items-center justify-center font-bold text-white
               ${type === 'cleanest' 
-                ? index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-amber-700' : 'bg-gray-600'
+                ? index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-slate-400' : index === 2 ? 'bg-amber-700' : 'bg-slate-600'
                 : 'bg-red-500'
               }
             `}>
@@ -159,10 +159,10 @@ export function CityRanking({ data }: CityRankingProps) {
                 )}
                 {city.dataQuality && (
                   <span className={`text-xs ${qualityColor}`} title={`Kvalitet podataka: ${city.dataQuality}`}>
-                    {city.dataQuality === 'excellent' && '●●●'}
-                    {city.dataQuality === 'good' && '●●○'}
-                    {city.dataQuality === 'fair' && '●○○'}
-                    {city.dataQuality === 'poor' && '○○○'}
+                    {city.dataQuality === 'excellent' && '+++'}
+                    {city.dataQuality === 'good' && '++-'}
+                    {city.dataQuality === 'fair' && '+--'}
+                    {city.dataQuality === 'poor' && '---'}
                   </span>
                 )}
               </div>
@@ -195,7 +195,7 @@ export function CityRanking({ data }: CityRankingProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Trophy className="h-5 w-5" />
-          Rangiranje gradova po kvaliteti zraka
+          Rangiranje gradova po kvalitetu vazduha
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -203,11 +203,11 @@ export function CityRanking({ data }: CityRankingProps) {
           <TabsList className="grid w-full grid-cols-3 mb-4">
             <TabsTrigger value="cleanest" className="flex items-center gap-1">
               <ArrowUp className="h-4 w-4 text-green-500" />
-              Najčistiji
+              Najcistiji
             </TabsTrigger>
             <TabsTrigger value="polluted" className="flex items-center gap-1">
               <ArrowDown className="h-4 w-4 text-red-500" />
-              Najzagađeniji
+              Najzagadjeniji
             </TabsTrigger>
             <TabsTrigger value="all">Svi gradovi</TabsTrigger>
           </TabsList>
@@ -297,3 +297,4 @@ export function CityRanking({ data }: CityRankingProps) {
     </Card>
   );
 }
+

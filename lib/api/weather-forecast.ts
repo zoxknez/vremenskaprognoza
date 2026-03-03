@@ -164,20 +164,20 @@ function getWindDirection(degrees: number): string {
 
 function getUVCategory(uv: number): string {
   if (uv <= 2) return 'Nizak';
-  if (uv <= 5) return 'Umjeren';
+  if (uv <= 5) return 'Umeren';
   if (uv <= 7) return 'Visok';
   if (uv <= 10) return 'Vrlo visok';
   return 'Ekstreman';
 }
 
 function getMoonPhase(phase: number): string {
-  if (phase === 0 || phase === 1) return 'Mlad mjesec';
-  if (phase < 0.25) return 'Mlađa srpasta';
-  if (phase === 0.25) return 'Prva četvrt';
-  if (phase < 0.5) return 'Mlađa grbasta';
-  if (phase === 0.5) return 'Pun mjesec';
+  if (phase === 0 || phase === 1) return 'Mlad mesec';
+  if (phase < 0.25) return 'Mlada srpasta';
+  if (phase === 0.25) return 'Prva cetvrt';
+  if (phase < 0.5) return 'Mlada grbasta';
+  if (phase === 0.5) return 'Pun mesec';
   if (phase < 0.75) return 'Starija grbasta';
-  if (phase === 0.75) return 'Posljednja četvrt';
+  if (phase === 0.75) return 'Poslednja cetvrt';
   return 'Starija srpasta';
 }
 
@@ -208,24 +208,24 @@ function getAirQualityImpact(
   pressure: number
 ): CurrentWeather['airQualityImpact'] {
   const dispersion = calculateDispersionIndex(wind, humidity, temp, pressure);
-  
-  const inversionRisk = temp < 5 && wind < 2 ? 'high' : 
+
+  const inversionRisk = temp < 5 && wind < 2 ? 'high' :
                         temp < 10 && wind < 3 ? 'moderate' : 'low';
-  
+
   const smogPotential = humidity > 80 && wind < 2 ? 'high' :
                         humidity > 60 && wind < 3 ? 'moderate' : 'low';
-  
+
   let recommendation = '';
   if (dispersion <= 3) {
-    recommendation = 'Loši uvjeti za raspršivanje zagađenja. Izbjegavajte dugotrajne aktivnosti vani.';
+    recommendation = 'Losi uslovi za rasprsivanje zagadjenja. Izbegavajte dugotrajne aktivnosti napolju.';
   } else if (dispersion <= 5) {
-    recommendation = 'Umjereni uvjeti. Osjetljive grupe trebaju biti oprezne.';
+    recommendation = 'Umereni uslovi. Osetljive grupe treba da budu oprezne.';
   } else if (dispersion <= 7) {
-    recommendation = 'Dobri uvjeti za raspršivanje zagađenja.';
+    recommendation = 'Dobri uslovi za rasprsivanje zagadjenja.';
   } else {
-    recommendation = 'Odlični uvjeti. Vjetar učinkovito raspršuje zagađivače.';
+    recommendation = 'Odlicni uslovi. Vetar efikasno rasprsuje zagadjivace.';
   }
-  
+
   return { dispersionIndex: dispersion, inversionRisk, smogPotential, recommendation };
 }
 
@@ -252,7 +252,7 @@ export async function getComprehensiveWeather(
   try {
     // Fetch One Call API 3.0 for comprehensive data
     const response = await fetch(
-      `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=hr&exclude=minutely`,
+      `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=sr&exclude=minutely`,
       { next: { revalidate: 300 } } // Cache for 5 minutes
     );
 
@@ -280,12 +280,12 @@ async function getFallbackWeather(
   try {
     // Current weather
     const currentRes = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=hr`
+      `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=sr`
     );
     
     // 5-day forecast
     const forecastRes = await fetch(
-      `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=hr`
+      `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=sr`
     );
 
     if (!currentRes.ok || !forecastRes.ok) {
@@ -389,7 +389,7 @@ function parseOneCallData(
     })),
     daily: (data.daily || []).slice(0, 7).map((day: OpenWeatherDaily, index: number) => {
       const date = new Date(day.dt * 1000);
-      const daysOfWeek = ['Nedjelja', 'Ponedjeljak', 'Utorak', 'Srijeda', 'Četvrtak', 'Petak', 'Subota'];
+      const daysOfWeek = ['Nedelja', 'Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota'];
       
       return {
         date: date.toISOString().split('T')[0],
@@ -481,7 +481,7 @@ function parseFallbackData(
   const daily = Array.from(dailyMap.entries()).slice(0, 7).map(([date, items], index) => {
     const temps = items.map(i => i.main.temp);
     const dateObj = new Date(date);
-    const daysOfWeek = ['Nedjelja', 'Ponedjeljak', 'Utorak', 'Srijeda', 'Četvrtak', 'Petak', 'Subota'];
+    const daysOfWeek = ['Nedelja', 'Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota'];
     
     return {
       date,
@@ -639,3 +639,5 @@ export async function getBalkanWeatherForecast(): Promise<ComprehensiveWeatherDa
 
   return results;
 }
+
+

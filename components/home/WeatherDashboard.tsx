@@ -13,7 +13,6 @@ interface WeatherDashboardProps {
     loading: boolean;
     currentTime: string;
     currentDate: string;
-    selectedCity?: { name: string; country: string; lat: number; lon: number };
     isFavorite: boolean;
     onRefresh: () => void;
     onToggleFavorite: () => void;
@@ -25,7 +24,6 @@ export function WeatherDashboard({
     loading,
     currentTime,
     currentDate,
-    selectedCity,
     isFavorite,
     onRefresh,
     onToggleFavorite,
@@ -52,12 +50,10 @@ export function WeatherDashboard({
             />
 
             <div className="space-y-4 sm:space-y-6 md:space-y-8">
-                {/* Prikaži AQI SAMO ako postoje pravi podaci */}
                 {weather.aqi !== null && weather.aqi !== undefined && weather.aqi > 0 && (
                     <AirQualityCard data={weather} />
                 )}
 
-                {/* Poruka ako nema AQI podataka */}
                 {(!weather.aqi || weather.aqi === 0) && (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -73,9 +69,7 @@ export function WeatherDashboard({
                     </motion.div>
                 )}
 
-                {forecast.length > 0 && (
-                    <HourlyForecast forecast={forecast} />
-                )}
+                {forecast.length > 0 && <HourlyForecast forecast={forecast} />}
             </div>
         </motion.div>
     );
@@ -103,7 +97,7 @@ export function ErrorDisplay({ error, onRetry }: ErrorDisplayProps) {
                         className="flex items-center gap-2 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-300 text-sm transition-colors"
                     >
                         <RefreshCw className="w-4 h-4" />
-                        Pokušaj ponovo
+                        Pokusaj ponovo
                     </button>
                 </motion.div>
             )}

@@ -2,7 +2,6 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, AlertTriangle } from "lucide-react";
-import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 import WeatherCard from "@/components/weather/WeatherCard";
 import AirQualityCard from "@/components/weather/AirQualityCard";
 import HourlyForecast from "@/components/weather/HourlyForecast";
@@ -18,8 +17,6 @@ import {
   WeatherCardSkeleton,
   AirQualityCardSkeleton,
   HourlyForecastSkeleton,
-  CityListSkeleton,
-  AdditionalInfoSkeleton,
 } from "@/components/ui/skeletons";
 import { SafeSection } from "@/components/common/SectionErrorBoundary";
 
@@ -51,8 +48,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-20 sm:pt-24">
-      <PWAInstallPrompt />
-
       <div className="container mx-auto px-4 max-w-7xl">
         {/* Hero Section */}
         <HeroSection
@@ -89,7 +84,7 @@ export default function HomePage() {
                 className="flex items-center gap-2 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-300 text-sm transition-colors"
               >
                 <RefreshCw className="w-4 h-4" />
-                Pokušaj ponovo
+                Pokusaj ponovo
               </button>
             </motion.div>
           )}
@@ -112,7 +107,7 @@ export default function HomePage() {
 
         {/* Main Weather Dashboard - Data */}
         {weather && (
-          <SafeSection title="Greška pri učitavanju vremenske prognoze">
+          <SafeSection title="Greska pri ucitavanju vremenske prognoze">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -187,3 +182,4 @@ export default function HomePage() {
     </div>
   );
 }
+

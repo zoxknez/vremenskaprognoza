@@ -27,7 +27,7 @@ interface WeatherCardProps {
 const getWeatherGradient = (description: string) => {
   const desc = description.toLowerCase();
   if (desc.includes("clear") || desc.includes("sun") || desc.includes("vedro") || desc.includes("sunčano")) return "from-amber-500/20 via-orange-500/10 to-yellow-500/5 border-amber-500/20";
-  if (desc.includes("cloud") || desc.includes("oblač")) return "from-slate-400/20 via-slate-500/10 to-gray-500/5 border-slate-400/20";
+  if (desc.includes("cloud") || desc.includes("oblač")) return "from-slate-400/20 via-slate-500/10 to-slate-600/5 border-slate-400/20";
   if (desc.includes("rain") || desc.includes("kiš") || desc.includes("drizzle")) return "from-blue-600/20 via-cyan-600/10 to-sky-600/5 border-blue-500/20";
   if (desc.includes("snow") || desc.includes("sneg")) return "from-indigo-200/20 via-blue-200/10 to-slate-200/5 border-indigo-200/20";
   if (desc.includes("thunder") || desc.includes("storm") || desc.includes("grmljavin")) return "from-purple-600/20 via-indigo-600/10 to-slate-900/5 border-purple-500/20";

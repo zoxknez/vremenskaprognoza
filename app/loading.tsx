@@ -1,35 +1,36 @@
-import { Cloud, Sun, CloudRain, Wind } from 'lucide-react';
+import { Cloud, Sun } from 'lucide-react';
 
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-[#0a0e17] flex items-center justify-center">
-      <div className="flex flex-col items-center gap-6">
-        {/* Animated Weather Icons */}
-        <div className="relative w-24 h-24">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-28 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-sky-500/10 blur-3xl" />
+        <div className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
+      </div>
+
+      <div className="relative z-10 flex flex-col items-center gap-6 rounded-3xl border border-slate-700/50 bg-slate-900/70 px-10 py-8 shadow-2xl shadow-black/20 backdrop-blur-xl">
+        <div className="relative h-24 w-24">
           <div className="absolute inset-0 flex items-center justify-center animate-pulse">
-            <Cloud className="w-16 h-16 text-primary-500/30" />
+            <Cloud className="h-16 w-16 text-sky-300/40" />
           </div>
-          <div className="absolute inset-0 flex items-center justify-center animate-spin [animation-duration:3s]">
-            <Sun className="w-8 h-8 text-amber-400" />
+          <div className="absolute inset-0 flex items-center justify-center animate-spin [animation-duration:3.2s]">
+            <Sun className="h-8 w-8 text-amber-300" />
           </div>
         </div>
-        
-        {/* Loading text with dots animation */}
+
         <div className="flex items-center gap-2">
-          <p className="text-slate-400 text-lg">Učitavanje</p>
+          <p className="text-lg text-slate-200">Ucitavanje</p>
           <span className="flex gap-1">
-            <span className="w-2 h-2 bg-primary-500 rounded-full animate-bounce [animation-delay:0ms]" />
-            <span className="w-2 h-2 bg-primary-500 rounded-full animate-bounce [animation-delay:150ms]" />
-            <span className="w-2 h-2 bg-primary-500 rounded-full animate-bounce [animation-delay:300ms]" />
+            <span className="h-2 w-2 animate-bounce rounded-full bg-cyan-400 [animation-delay:0ms]" />
+            <span className="h-2 w-2 animate-bounce rounded-full bg-cyan-400 [animation-delay:150ms]" />
+            <span className="h-2 w-2 animate-bounce rounded-full bg-cyan-400 [animation-delay:300ms]" />
           </span>
         </div>
 
-        {/* Progress bar */}
-        <div className="w-48 h-1 bg-slate-800 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-primary-500 to-cyan-500 rounded-full animate-[loading-bar_1.5s_ease-in-out_infinite]" />
+        <div className="h-1.5 w-56 overflow-hidden rounded-full bg-slate-800">
+          <div className="h-full w-2/3 animate-pulse rounded-full bg-gradient-to-r from-sky-500 to-cyan-400" />
         </div>
       </div>
     </div>
   );
 }
-

@@ -110,7 +110,6 @@ export default function RootLayout({
     <html lang="sr" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://api.openweathermap.org" />
-        <link rel="preconnect" href="https://api.mapbox.com" />
         <StructuredData />
       </head>
       <body className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
