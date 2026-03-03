@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Leaf,
@@ -35,47 +35,13 @@ export default function KvalitetVazduhaPage() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [aqiHistory, setAqiHistory] = useState<HistoricalAQI[]>([]);
   const [nearbyStations, setNearbyStations] = useState<NearbyStation[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const { isFavorite, toggleFavorite } = useFavorites();
 
   const handleSearchSelect = (city: SearchResult) => {
     setSelectedCity(city);
   };
-
-  // Generate mock AQI history (in real app, this would come from API)
-  const generateAqiHistory = useCallback((currentAqi: number) => {
-    const history: HistoricalAQI[] = [];
-    const now = new Date();
-
-    for (let i = 23; i >= 0; i--) {
-      const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-      const variation = Math.floor(Math.random() * 30) - 15;
-      const aqi = Math.max(10, Math.min(300, currentAqi + variation));
-
-      history.push({
-        time: time.getHours().toString().padStart(2, '0') + ':00',
-        aqi,
-        label: getAQILabel(aqi)
-      });
-    }
-
-    return history;
-  }, []);
-
-  // Generate nearby stations (in real app, this would come from API)
-  const generateNearbyStations = useCallback((city: SearchResult): NearbyStation[] => {
-    const stationNames = [
-      'Centar', 'Industrijska zona', 'Park', 'Autoput', 'Bolnica'
-    ];
-
-    return stationNames.slice(0, 4).map((name, index) => ({
-      name: `${city.name} - ${name}`,
-      distance: (index + 1) * 1.2 + Math.random() * 0.5,
-      aqi: Math.floor(Math.random() * 100) + 30,
-      lat: city.lat + (Math.random() - 0.5) * 0.05,
-      lon: city.lon + (Math.random() - 0.5) * 0.05
-    }));
-  }, []);
 
   const handleToggleNotifications = async () => {
     if (!notificationsEnabled) {
@@ -98,15 +64,20 @@ export default function KvalitetVazduhaPage() {
 
   const fetchAirQuality = async (city: SearchResult) => {
     setLoading(true);
+    setError(null);
 
     try {
-      const response = await fetch(
-        `/api/air-quality?lat=${city.lat}&lon=${city.lon}`
-      );
+      const [aqiResponse, historyResponse, stationsResponse] = await Promise.all([
+        fetch(`/api/air-quality?lat=${city.lat}&lon=${city.lon}`),
+        fetch(`/api/air-quality/history?lat=${city.lat}&lon=${city.lon}`),
+        fetch(`/api/air-quality/stations?lat=${city.lat}&lon=${city.lon}&radius=25`),
+      ]);
 
-      if (!response.ok) throw new Error("Failed to fetch air quality");
+      if (!aqiResponse.ok) throw new Error("Failed to fetch air quality");
 
-      const data = await response.json();
+      const data = await aqiResponse.json();
+      const historyPayload = historyResponse.ok ? await historyResponse.json() : { history: [] };
+      const stationsPayload = stationsResponse.ok ? await stationsResponse.json() : { stations: [] };
 
       const aqiData: AirQualityData = {
         aqi: data.aqi || 50,
@@ -119,23 +90,40 @@ export default function KvalitetVazduhaPage() {
       };
 
       setAirQuality(aqiData);
-      setAqiHistory(generateAqiHistory(aqiData.aqi));
-      setNearbyStations(generateNearbyStations(city));
+      setAqiHistory(
+        Array.isArray(historyPayload.history)
+          ? historyPayload.history.map((item: HistoricalAQI) => ({
+              time: item.time,
+              aqi: item.aqi,
+              label: item.label || getAQILabel(item.aqi),
+            }))
+          : []
+      );
+
+      setNearbyStations(
+        Array.isArray(stationsPayload.stations)
+          ? stationsPayload.stations.map((station: {
+              name: string;
+              distance: number;
+              aqi: number;
+              lat: number;
+              lon: number;
+            }) => ({
+              name: station.name,
+              distance: station.distance,
+              aqi: station.aqi,
+              lat: station.lat,
+              lon: station.lon,
+            }))
+          : []
+      );
 
     } catch (error) {
       console.error("Air quality fetch error:", error);
-      // Fallback data
-      const fallbackAqi = Math.floor(Math.random() * 150) + 30;
-      setAirQuality({
-        aqi: fallbackAqi,
-        pm25: Math.floor(Math.random() * 50) + 10,
-        pm10: Math.floor(Math.random() * 80) + 20,
-        no2: Math.floor(Math.random() * 40) + 5,
-        o3: Math.floor(Math.random() * 60) + 10,
-        co: Math.floor(Math.random() * 500) + 100,
-      });
-      setAqiHistory(generateAqiHistory(fallbackAqi));
-      if (city) setNearbyStations(generateNearbyStations(city));
+      setError("Nije moguće učitati podatke o kvalitetu vazduha za izabrani grad.");
+      setAirQuality(null);
+      setAqiHistory([]);
+      setNearbyStations([]);
     } finally {
       setLoading(false);
     }
@@ -263,6 +251,13 @@ export default function KvalitetVazduhaPage() {
               currentAqi={airQuality.aqi}
             />
           </motion.div>
+        )}
+
+        {error && !loading && (
+          <div className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+            <p className="text-red-300 text-sm">{error}</p>
+          </div>
         )}
 
         {airQuality && (

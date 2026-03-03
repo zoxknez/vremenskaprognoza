@@ -1,13 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { coordinatesSchema } from '@/lib/utils/validation';
-import { getAQILabel, getAQICategory } from '@/lib/utils/aqi';
+import { getAQILabel, getAQICategory, calculateAQIFromPM25 } from '@/lib/utils/aqi';
 import { calculateDistance } from '@/lib/utils/geo';
+import { enforceRateLimit, requireSameOrigin } from '@/lib/utils/request-security';
 
 /**
  * API endpoint for nearby air quality monitoring stations
  * Returns stations within a specified radius with their current AQI
  */
 export async function GET(request: NextRequest) {
+    const sameOriginError = requireSameOrigin(request);
+    if (sameOriginError) {
+        return sameOriginError;
+    }
+
+    const rateLimitError = await enforceRateLimit(request, {
+        prefix: 'api:air-quality-stations',
+        limit: 90,
+        windowMs: 60 * 1000,
+    });
+    if (rateLimitError) {
+        return rateLimitError;
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const lat = searchParams.get('lat');
     const lon = searchParams.get('lon');
@@ -23,7 +38,8 @@ export async function GET(request: NextRequest) {
     }
 
     const { lat: latitude, lon: longitude } = validation.data;
-    const radius = radiusParam ? parseFloat(radiusParam) : 50; // Default 50km radius
+    const parsedRadius = radiusParam ? parseFloat(radiusParam) : 50;
+    const radius = Number.isFinite(parsedRadius) && parsedRadius > 0 ? Math.min(parsedRadius, 100) : 50; // Default 50km radius
 
     try {
         const apiKey = process.env.OPENWEATHER_API_KEY;
@@ -47,7 +63,7 @@ export async function GET(request: NextRequest) {
 
                 const data = await response.json();
                 const pm25 = data.list?.[0]?.components?.pm2_5 || 0;
-                const aqi = calculateSimpleAQI(pm25);
+                const aqi = calculateAQIFromPM25(pm25);
                 const distance = calculateDistance(latitude, longitude, point.lat, point.lon);
 
                 // Generate realistic station names based on direction
@@ -88,7 +104,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             stations: [],
             error: 'Nije moguće učitati podatke o stanicama',
-        });
+        }, { status: 500 });
     }
 }
 
@@ -154,14 +170,3 @@ function getDirection(
     return 'Centar';
 }
 
-/**
- * Simplified AQI calculation from PM2.5
- */
-function calculateSimpleAQI(pm25: number): number {
-    if (pm25 <= 12) return (pm25 / 12) * 50;
-    if (pm25 <= 35.4) return 50 + ((pm25 - 12) / 23.4) * 50;
-    if (pm25 <= 55.4) return 100 + ((pm25 - 35.4) / 20) * 50;
-    if (pm25 <= 150.4) return 150 + ((pm25 - 55.4) / 95) * 50;
-    if (pm25 <= 250.4) return 200 + ((pm25 - 150.4) / 100) * 100;
-    return 300 + ((pm25 - 250.4) / 100) * 100;
-}

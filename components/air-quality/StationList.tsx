@@ -5,8 +5,7 @@ import { motion } from 'framer-motion';
 import { AirQualityData } from '@/lib/types/air-quality';
 import { AirQualityCard } from './AirQualityCard';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Search, Filter, ArrowUpDown } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 interface StationListProps {
   data: AirQualityData[];
@@ -16,7 +15,7 @@ interface StationListProps {
 
 type SortOption = 'aqi-desc' | 'aqi-asc' | 'name-asc' | 'name-desc';
 
-export function StationList({ data, onSelect, selectedId }: StationListProps) {
+export function StationList({ data, onSelect }: StationListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('aqi-desc');
   const [filterSource, setFilterSource] = useState<string>('all');

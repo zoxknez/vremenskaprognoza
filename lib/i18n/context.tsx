@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Locale, DEFAULT_LOCALE, SUPPORTED_LOCALES, translations, t as translate } from './translations';
+import { Locale, DEFAULT_LOCALE, SUPPORTED_LOCALES, t as translate } from './translations';
 
 interface I18nContextType {
   locale: Locale;

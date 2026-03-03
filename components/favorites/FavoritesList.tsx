@@ -1,19 +1,19 @@
 'use client';
 
 import { useFavorites } from '@/lib/hooks/useFavorites';
-import { AirQualityData, AQI_COLORS } from '@/lib/types/air-quality';
+import { AirQualityData } from '@/lib/types/air-quality';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
-import { Star, Trash2, MapPin } from 'lucide-react';
-import Link from 'next/link';
+import { Star, MapPin } from 'lucide-react';
 
 interface FavoritesListProps {
   data: AirQualityData[];
 }
 
 export function FavoritesList({ data }: FavoritesListProps) {
-  const { favorites, isFavorite } = useFavorites();
+  const { favorites } = useFavorites();
+  void data;
 
   if (favorites.length === 0) {
     return (

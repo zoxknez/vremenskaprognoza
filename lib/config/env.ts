@@ -9,7 +9,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
   // Weather & Air Quality APIs
-  OPENWEATHER_API_KEY: z.string().min(1, 'OpenWeather API key is required'),
+  OPENWEATHER_API_KEY: z.string().optional(),
   WAQI_API_KEY: z.string().optional(), // World Air Quality Index
   AQICN_API_KEY: z.string().optional(), // Air Quality Index China
   AIRVISUAL_API_KEY: z.string().optional(), // IQAir AirVisual
@@ -22,6 +22,9 @@ const envSchema = z.object({
 
   // External Services
   ALLTHINGSTALK_TOKEN: z.string().optional(),
+  NOTIFICATIONS_API_TOKEN: z.string().optional(),
+  UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
 
   // Vercel
   VERCEL_URL: z.string().optional(),

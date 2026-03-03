@@ -6,7 +6,7 @@ import { Download, Wifi, WifiOff, RefreshCw, Bell } from 'lucide-react';
 import { useState } from 'react';
 
 export function PWAInstallButton() {
-  const { isInstallable, isInstalled, isOnline, installApp, checkForUpdates, requestNotificationPermission } = usePWA();
+  const { isInstallable, isInstalled, installApp, checkForUpdates, requestNotificationPermission } = usePWA();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleInstall = async () => {

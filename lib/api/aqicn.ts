@@ -89,14 +89,14 @@ export async function fetchAQICNData(): Promise<AirQualityData[]> {
             }
           }
         }
-      } catch (error) {
+      } catch {
         // Continue to next city
         continue;
       }
     }
 
     return results;
-  } catch (error) {
+  } catch {
     return [];
   }
 }

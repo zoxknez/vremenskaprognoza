@@ -1,184 +1,183 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import {
+  enforceRateLimit,
+  requireJsonContentType,
+  requireMaxBodySize,
+  requireSameOrigin,
+} from '@/lib/utils/request-security';
 
-// Validaciona šema za kontakt formu
 const contactSchema = z.object({
-  name: z.string().min(2, 'Ime mora imati najmanje 2 karaktera').max(100),
-  email: z.string().email('Neispravan email format'),
-  message: z.string().min(10, 'Poruka mora imati najmanje 10 karaktera').max(5000),
+  name: z.string().trim().min(2, 'Ime mora imati najmanje 2 karaktera').max(100),
+  email: z.string().trim().email('Neispravan email format'),
+  message: z.string().trim().min(10, 'Poruka mora imati najmanje 10 karaktera').max(5000),
+  website: z.string().trim().max(0).optional(), // honeypot
 });
 
-// Rate limiting - poboljšana implementacija sa cleanup-om
-const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
-const RATE_LIMIT = 5; // maksimalno 5 poruka
-const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // po satu
-const MAX_MAP_SIZE = 10000; // maksimalna veličina mape
-let lastCleanup = Date.now();
-const CLEANUP_INTERVAL = 5 * 60 * 1000; // čišćenje svakih 5 minuta
+const RATE_LIMIT = 5;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 
-// Čišćenje zastarelih unosa
-function cleanupRateLimitMap(): void {
-  const now = Date.now();
-  
-  // Preskočiti ako nije prošlo dovoljno vremena
-  if (now - lastCleanup < CLEANUP_INTERVAL) {
-    return;
-  }
-  
-  lastCleanup = now;
-  
-  // Obrisati zastarele unose
-  for (const [ip, record] of rateLimitMap.entries()) {
-    if (now - record.lastReset > RATE_LIMIT_WINDOW) {
-      rateLimitMap.delete(ip);
-    }
-  }
-  
-  // Ako je mapa i dalje prevelika, obrisati najstarije unose
-  if (rateLimitMap.size > MAX_MAP_SIZE) {
-    const entries = Array.from(rateLimitMap.entries())
-      .sort((a, b) => a[1].lastReset - b[1].lastReset);
-    
-    const toDelete = entries.slice(0, rateLimitMap.size - MAX_MAP_SIZE + 1000);
-    for (const [ip] of toDelete) {
-      rateLimitMap.delete(ip);
-    }
-  }
-}
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  
-  // Pokreni cleanup pre provere
-  cleanupRateLimitMap();
-  
-  const record = rateLimitMap.get(ip);
-  
-  if (!record) {
-    rateLimitMap.set(ip, { count: 1, lastReset: now });
-    return false;
-  }
-  
-  if (now - record.lastReset > RATE_LIMIT_WINDOW) {
-    rateLimitMap.set(ip, { count: 1, lastReset: now });
-    return false;
-  }
-  
-  if (record.count >= RATE_LIMIT) {
-    return true;
-  }
-  
-  record.count++;
-  return false;
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Dobavi IP za rate limiting
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
-      ?? request.headers.get('x-real-ip') 
-      ?? 'unknown';
-    
-    // Proveri rate limit
-    if (isRateLimited(ip)) {
-      return NextResponse.json(
-        { error: 'Previše zahteva. Pokušajte ponovo za sat vremena.' },
-        { status: 429 }
-      );
+    const sameOriginError = requireSameOrigin(request);
+    if (sameOriginError) {
+      return sameOriginError;
     }
-    
-    // Parsiraj telo zahteva
-    const body = await request.json();
-    
-    // Validiraj podatke
+
+    const rateLimitError = await enforceRateLimit(request, {
+      prefix: 'api:contact',
+      limit: RATE_LIMIT,
+      windowMs: RATE_LIMIT_WINDOW_MS,
+      message: 'Previse zahteva. Pokusajte ponovo za sat vremena.',
+    });
+    if (rateLimitError) {
+      return rateLimitError;
+    }
+
+    const maxBodySizeError = requireMaxBodySize(request, 32 * 1024);
+    if (maxBodySizeError) {
+      return maxBodySizeError;
+    }
+
+    const contentTypeError = requireJsonContentType(request);
+    if (contentTypeError) {
+      return contentTypeError;
+    }
+
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Neispravan JSON payload' }, { status: 400 });
+    }
+
     const result = contactSchema.safeParse(body);
     if (!result.success) {
       return NextResponse.json(
-        { 
-          error: 'Neispravni podaci', 
-          details: result.error.flatten().fieldErrors 
+        {
+          error: 'Neispravni podaci',
+          details: result.error.flatten().fieldErrors,
         },
         { status: 400 }
       );
     }
-    
-    const { name, email, message } = result.data;
-    
-    // Ovde možete dodati različite metode slanja:
-    // 1. Email putem Resend, SendGrid, Nodemailer, itd.
-    // 2. Sačuvati u bazu podataka
-    // 3. Poslati na Discord/Slack webhook
-    // 4. Integrisati sa FormSpree, Netlify Forms, itd.
-    
-    // Primer: Slanje na Discord webhook (ako je konfigurisan)
+
+    const { name, email, message, website } = result.data;
+
+    // Honeypot trap for basic bots
+    if (website && website.length > 0) {
+      return NextResponse.json({ error: 'Neispravni podaci' }, { status: 400 });
+    }
+
+    const escapedName = escapeHtml(name);
+    const escapedEmail = escapeHtml(email);
+    const escapedMessage = escapeHtml(message).replace(/\n/g, '<br>');
+
+    let deliveryAttempted = false;
+    let deliverySucceeded = false;
+
     const discordWebhook = process.env.DISCORD_WEBHOOK_URL;
     if (discordWebhook) {
-      await fetch(discordWebhook, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          embeds: [{
-            title: '📬 Nova poruka sa kontakt forme',
-            color: 0x3B82F6,
-            fields: [
-              { name: '👤 Ime', value: name, inline: true },
-              { name: '📧 Email', value: email, inline: true },
-              { name: '💬 Poruka', value: message.substring(0, 1024) },
+      deliveryAttempted = true;
+      try {
+        const discordResponse = await fetch(discordWebhook, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            embeds: [
+              {
+                title: 'Nova poruka sa kontakt forme',
+                color: 0x3b82f6,
+                fields: [
+                  { name: 'Ime', value: name, inline: true },
+                  { name: 'Email', value: email, inline: true },
+                  { name: 'Poruka', value: message.substring(0, 1024) },
+                ],
+                timestamp: new Date().toISOString(),
+              },
             ],
-            timestamp: new Date().toISOString(),
-          }],
-        }),
-      });
+          }),
+        });
+
+        if (discordResponse.ok) {
+          deliverySucceeded = true;
+        }
+      } catch (error) {
+        console.error('Discord webhook error:', error);
+      }
     }
-    
-    // Primer: Slanje emaila putem Resend (ako je konfigurisan)
+
     const resendApiKey = process.env.RESEND_API_KEY;
     const contactEmail = process.env.CONTACT_EMAIL;
     if (resendApiKey && contactEmail) {
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${resendApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: 'Kontakt Forma <noreply@yourdomain.com>',
-          to: contactEmail,
-          subject: `Nova poruka od ${name}`,
-          html: `
-            <h2>Nova poruka sa kontakt forme</h2>
-            <p><strong>Ime:</strong> ${name}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            <p><strong>Poruka:</strong></p>
-            <p>${message.replace(/\n/g, '<br>')}</p>
-          `,
-          reply_to: email,
-        }),
-      });
+      deliveryAttempted = true;
+      try {
+        const resendResponse = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: 'Kontakt Forma <noreply@yourdomain.com>',
+            to: contactEmail,
+            subject: `Nova poruka od ${name}`,
+            html: `
+              <h2>Nova poruka sa kontakt forme</h2>
+              <p><strong>Ime:</strong> ${escapedName}</p>
+              <p><strong>Email:</strong> ${escapedEmail}</p>
+              <p><strong>Poruka:</strong></p>
+              <p>${escapedMessage}</p>
+            `,
+            reply_to: email,
+          }),
+        });
+
+        if (resendResponse.ok) {
+          deliverySucceeded = true;
+        }
+      } catch (error) {
+        console.error('Resend error:', error);
+      }
     }
-    
-    // Log za development
-    console.log('Contact form submission:', { name, email, messageLength: message.length });
-    
+
+    if (deliveryAttempted && !deliverySucceeded) {
+      return NextResponse.json(
+        { error: 'Doslo je do greske pri slanju poruke. Pokusajte ponovo.' },
+        { status: 502 }
+      );
+    }
+
+    console.log('Contact form submission:', {
+      name,
+      email,
+      messageLength: message.length,
+      deliveryAttempted,
+      deliverySucceeded,
+    });
+
     return NextResponse.json({
       success: true,
-      message: 'Poruka je uspešno poslata',
+      message: 'Poruka je uspesno poslata',
     });
-    
   } catch (error) {
     console.error('Contact form error:', error);
-    
     return NextResponse.json(
-      { error: 'Došlo je do greške pri slanju poruke. Pokušajte ponovo.' },
+      { error: 'Doslo je do greske pri slanju poruke. Pokusajte ponovo.' },
       { status: 500 }
     );
   }
 }
 
-// Ne dozvoljavamo GET metodu
 export async function GET() {
-  return NextResponse.json(
-    { error: 'Method not allowed' },
-    { status: 405 }
-  );
+  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
 }

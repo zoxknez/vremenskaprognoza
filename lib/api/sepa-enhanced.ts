@@ -23,8 +23,6 @@ const SEPA_STATIONS = [
 ];
 
 export async function fetchSEPAData(): Promise<AirQualityData[]> {
-  const results: AirQualityData[] = [];
-
   try {
     // Pokušaj fetch sa SEPA API-ja (ako postoji)
     // Ako ne postoji zvanični API, koristimo web scraping ili RSS
@@ -119,6 +117,10 @@ function parseSEPARss(rssText: string): AirQualityData[] {
   const results: AirQualityData[] = [];
   
   try {
+    if (!rssText.trim()) {
+      return [];
+    }
+
     // Ovde bi trebao pravi XML parsing
     // Za sada vraćamo praznu listu jer RSS format nije poznat
     console.log('RSS parsing not implemented yet');

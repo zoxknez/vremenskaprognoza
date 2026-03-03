@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { fetchAllAirQualityData } from '@/lib/api/aggregate';
 import { 
   calculateAirQualityStats, 
@@ -8,11 +8,26 @@ import {
   getCityRankings 
 } from '@/lib/api/air-quality-stats';
 import { cityRankingCache } from '@/lib/api/city-ranking-cache';
+import { enforceRateLimit, requireSameOrigin } from '@/lib/utils/request-security';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 300; // Cache for 5 minutes
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  const sameOriginError = requireSameOrigin(request);
+  if (sameOriginError) {
+    return sameOriginError;
+  }
+
+  const rateLimitError = await enforceRateLimit(request, {
+    prefix: 'api:air-quality-stats',
+    limit: 60,
+    windowMs: 60 * 1000,
+  });
+  if (rateLimitError) {
+    return rateLimitError;
+  }
+
   try {
     // Check if client wants fresh data
     const { searchParams } = new URL(request.url);
@@ -23,11 +38,66 @@ export async function GET(request: Request) {
     if (!forceFresh) {
       const cached = cityRankingCache.get(cacheKey);
       if (cached) {
+        const sortedByBest = [...cached].sort((a, b) => a.aqi - b.aqi);
+        const sortedByWorst = [...cached].sort((a, b) => b.aqi - a.aqi);
+        const totalStations = cached.reduce((sum, city) => sum + city.stationCount, 0);
+        const countries = new Set(cached.map(city => city.country));
+
         return NextResponse.json({
-          stats: calculateAirQualityStats([]), // Empty stats for now
+          stats: {
+            totalStations,
+            totalCities: cached.length,
+            totalCountries: countries.size,
+            citiesWithData: sortedByBest.map(city => city.name),
+            countriesWithData: Array.from(countries).sort(),
+            sourcesCount: {
+              waqi: 0,
+              openweather: 0,
+              openaq: 0,
+              sensorCommunity: 0,
+              aqicn: 0,
+              airvisual: 0,
+              sepa: 0,
+              allthingstalk: 0,
+            },
+            averageAQI: cached.length > 0
+              ? Math.round(cached.reduce((sum, city) => sum + city.aqi, 0) / cached.length)
+              : 0,
+            worstCity: sortedByWorst[0]
+              ? {
+                name: sortedByWorst[0].name,
+                aqi: sortedByWorst[0].aqi,
+                country: sortedByWorst[0].country,
+              }
+              : null,
+            bestCity: sortedByBest[0]
+              ? {
+                name: sortedByBest[0].name,
+                aqi: sortedByBest[0].aqi,
+                country: sortedByBest[0].country,
+              }
+              : null,
+            lastUpdated: new Date().toISOString(),
+          },
           rankings: cached,
-          worstCities: cached.slice().reverse().slice(0, 10),
-          bestCities: cached.slice(0, 10),
+          worstCities: sortedByWorst.slice(0, 10),
+          bestCities: sortedByBest.slice(0, 10),
+          countryStats: Array.from(countries)
+            .map(country => {
+              const countryCities = cached.filter(city => city.country === country);
+              const stationCount = countryCities.reduce((sum, city) => sum + city.stationCount, 0);
+              const averageAQI = Math.round(
+                countryCities.reduce((sum, city) => sum + city.aqi, 0) / Math.max(countryCities.length, 1)
+              );
+
+              return {
+                country,
+                totalStations: stationCount,
+                averageAQI,
+                cities: countryCities.length,
+              };
+            })
+            .sort((a, b) => b.totalStations - a.totalStations),
           cached: true,
         }, {
           headers: {

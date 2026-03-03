@@ -25,6 +25,22 @@ export interface ErrorResponse {
   timestamp: string;
 }
 
+function isProductionEnv(): boolean {
+  return process.env.NODE_ENV === 'production';
+}
+
+function sanitizeErrorMessage(message: string, statusCode: number): string {
+  if (!isProductionEnv()) {
+    return message;
+  }
+
+  if (statusCode >= 500) {
+    return 'Internal server error';
+  }
+
+  return message;
+}
+
 /**
  * Unified API error handler
  * Koristi u catch blokovima za konzistentan error handling
@@ -38,7 +54,12 @@ export function handleAPIError(error: unknown, source?: string): APIError {
   // Ako je Error objekat
   if (error instanceof Error) {
     logger.error(`[${source || 'API'}] Error:`, error.message);
-    return new APIError(error.message, 500, source, error);
+    return new APIError(
+      sanitizeErrorMessage(error.message, 500),
+      500,
+      source,
+      error
+    );
   }
 
   // Ako je fetch error sa statusom
@@ -46,13 +67,23 @@ export function handleAPIError(error: unknown, source?: string): APIError {
     const fetchError = error as { status: number; statusText?: string };
     const message = fetchError.statusText || 'Request failed';
     logger.error(`[${source || 'API'}] HTTP ${fetchError.status}:`, message);
-    return new APIError(message, fetchError.status, source, error);
+    return new APIError(
+      sanitizeErrorMessage(message, fetchError.status),
+      fetchError.status,
+      source,
+      error
+    );
   }
 
   // Generic error
   const message = String(error);
   logger.error(`[${source || 'API'}] Unknown error:`, message);
-  return new APIError(message, 500, source, error);
+  return new APIError(
+    sanitizeErrorMessage(message, 500),
+    500,
+    source,
+    error
+  );
 }
 
 /**
@@ -61,7 +92,7 @@ export function handleAPIError(error: unknown, source?: string): APIError {
 export function createErrorResponse(error: APIError | Error | unknown, source?: string): ErrorResponse {
   if (error instanceof APIError) {
     return {
-      error: error.message,
+      error: sanitizeErrorMessage(error.message, error.statusCode),
       statusCode: error.statusCode,
       source: error.source || source,
       timestamp: new Date().toISOString(),
@@ -70,7 +101,7 @@ export function createErrorResponse(error: APIError | Error | unknown, source?: 
 
   if (error instanceof Error) {
     return {
-      error: error.message,
+      error: sanitizeErrorMessage(error.message, 500),
       statusCode: 500,
       source,
       timestamp: new Date().toISOString(),
@@ -78,7 +109,7 @@ export function createErrorResponse(error: APIError | Error | unknown, source?: 
   }
 
   return {
-    error: String(error),
+    error: sanitizeErrorMessage(String(error), 500),
     statusCode: 500,
     source,
     timestamp: new Date().toISOString(),

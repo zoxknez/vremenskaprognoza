@@ -1,31 +1,24 @@
 ﻿'use client';
 
-import { useState } from 'react';
+import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import {
   Sun,
   Cloud,
-  CloudRain,
-  CloudSnow,
   Wind,
   Droplets,
-  Thermometer,
   Eye,
   Gauge,
   Sunrise,
   Sunset,
   Moon,
   AlertTriangle,
-  TrendingUp,
-  TrendingDown,
-  Clock,
   Calendar,
   Navigation,
   Waves,
-  Umbrella,
-  Zap
+  Umbrella
 } from 'lucide-react';
 
 // Types from weather-forecast.ts
@@ -146,7 +139,15 @@ interface ComprehensiveWeatherData {
 // Weather icon component
 function WeatherIcon({ icon, size = 24 }: { icon: string; size?: number }) {
   const iconUrl = `https://openweathermap.org/img/wn/${icon}@2x.png`;
-  return <img src={iconUrl} alt="weather" style={{ width: size, height: size }} />;
+  return (
+    <Image
+      src={iconUrl}
+      alt="weather"
+      width={size}
+      height={size}
+      unoptimized
+    />
+  );
 }
 
 // Main comprehensive weather component

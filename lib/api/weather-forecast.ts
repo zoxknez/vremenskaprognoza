@@ -3,7 +3,6 @@
  * Detailed weather data with 7-day forecast, hourly data, and all meteorological parameters
  */
 
-import { BALKAN_COUNTRIES } from './balkan-countries';
 import type { OpenWeatherOneCallResponse, OpenWeatherForecastResponse, OpenWeatherCurrent, OpenWeatherForecastItem, OpenWeatherHourly, OpenWeatherDaily, OpenWeatherAlert } from '@/lib/types/api-responses';
 
 // Detailed weather interfaces
@@ -242,7 +241,7 @@ export async function getComprehensiveWeather(
   lon: number,
   cityName: string
 ): Promise<ComprehensiveWeatherData | null> {
-  const apiKey = process.env.OPENWEATHER_API_KEY || process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
+  const apiKey = process.env.OPENWEATHER_API_KEY;
   
   if (!apiKey) {
     console.warn('OpenWeather API key not configured');

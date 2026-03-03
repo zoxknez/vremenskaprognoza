@@ -154,7 +154,7 @@ export function useHomePageData(): UseHomePageDataReturn {
         };
 
         updateTime();
-        const timer = setInterval(updateTime, 1000);
+        const timer = setInterval(updateTime, 60000);
         return () => clearInterval(timer);
     }, []);
 
@@ -194,13 +194,16 @@ export function useHomePageData(): UseHomePageDataReturn {
                 `/api/forecast?lat=${city.lat}&lon=${city.lon}`
             ).then(res => res.json());
 
-            const allCityList = POPULAR_CITIES.filter(c => c.name !== city.name).slice(0, 12);
-            const allCitiesPromise = Promise.all(allCityList.map(async (otherCity) => {
+            // Use one shared city weather batch and derive both UI lists from it.
+            const cityList = POPULAR_CITIES.filter(c => c.name !== city.name).slice(0, 12);
+            const cityBatchPromise = Promise.all(cityList.map(async (otherCity) => {
                 try {
                     const res = await fetch(
                         `/api/weather?lat=${otherCity.lat}&lon=${otherCity.lon}&city=${encodeURIComponent(otherCity.name)}`
                     );
+                    if (!res.ok) return null;
                     const data = await res.json();
+                    if (typeof data.temperature !== 'number') return null;
                     return {
                         name: otherCity.name,
                         country: otherCity.country,
@@ -213,31 +216,10 @@ export function useHomePageData(): UseHomePageDataReturn {
                 }
             }));
 
-            const aqiCityList = POPULAR_CITIES.filter(c => c.name !== city.name).slice(0, 18);
-            const aqiCitiesPromise = Promise.all(aqiCityList.map(async (otherCity) => {
-                try {
-                    const res = await fetch(
-                        `/api/weather?lat=${otherCity.lat}&lon=${otherCity.lon}&city=${encodeURIComponent(otherCity.name)}`
-                    );
-                    const data = await res.json();
-                    if (!data.aqi || data.aqi === 0) return null;
-                    return {
-                        name: otherCity.name,
-                        country: otherCity.country,
-                        temp: Math.round(data.temperature),
-                        aqi: data.aqi,
-                        description: data.description,
-                    };
-                } catch {
-                    return null;
-                }
-            }));
-
-            const [weatherData, forecastData, allCitiesResults, aqiCitiesResults] = await Promise.all([
+            const [weatherData, forecastData, cityBatchResults] = await Promise.all([
                 weatherPromise,
                 forecastPromise,
-                allCitiesPromise,
-                aqiCitiesPromise,
+                cityBatchPromise,
             ]);
 
             setWeather({
@@ -275,10 +257,10 @@ export function useHomePageData(): UseHomePageDataReturn {
                 setForecast(forecastData.hourly.slice(0, 24));
             }
 
-            const validAllCities = allCitiesResults.filter((c): c is CityData => c !== null).slice(0, 12);
+            const validAllCities = cityBatchResults.filter((c): c is CityData => c !== null).slice(0, 12);
             setAllCities(validAllCities);
 
-            const citiesWithAQI = aqiCitiesResults.filter((c): c is CityData => c !== null && c.aqi > 0).slice(0, 6);
+            const citiesWithAQI = validAllCities.filter((c) => c.aqi > 0).slice(0, 6);
             setOtherCities(citiesWithAQI);
 
         } catch (err) {

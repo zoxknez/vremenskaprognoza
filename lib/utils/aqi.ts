@@ -1,10 +1,13 @@
 // Centralizovana AQI kalkulacija po US EPA standardu
 // https://www.airnow.gov/aqi/aqi-basics/
 
-import { AQICategory } from '@/lib/types/air-quality';
-
-// Re-export za jednostavniji pristup
-export type { AQICategory } from '@/lib/types/air-quality';
+export type AQICategory =
+  | "good"
+  | "moderate"
+  | "sensitive"
+  | "unhealthy"
+  | "veryUnhealthy"
+  | "hazardous";
 
 export interface AQIBreakpoint {
   low: number;

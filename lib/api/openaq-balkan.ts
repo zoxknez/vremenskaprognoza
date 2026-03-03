@@ -1,6 +1,6 @@
 import { AirQualityData, AirQualitySource } from '@/lib/types/air-quality';
 import { calculateAQI } from '@/lib/types/air-quality';
-import { BALKAN_COUNTRIES, getAllBalkanCities, BalkanCountryCode } from './balkan-countries';
+import { BALKAN_COUNTRIES, BalkanCountryCode } from './balkan-countries';
 
 const OPENAQ_API_V3 = 'https://api.openaq.org/v3';
 const OPENAQ_API_V2 = 'https://api.openaq.org/v2';

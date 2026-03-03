@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n } from '@/lib/i18n/context';
 import { LanguageSelector } from '@/components/i18n/LanguageSelector';
 import {
-  CloudSun,
   Menu,
   X,
   Home,

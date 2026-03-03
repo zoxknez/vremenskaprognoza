@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { AlertCircle, Calendar, Clock, Shield, Sun } from 'lucide-react';
 
-import { fetchGoogleUVIndex, type UVIndexData } from '@/lib/api/google-uv-index';
+import type { UVIndexData } from '@/lib/api/google-uv-index';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/Skeleton';
 
@@ -83,7 +83,20 @@ export function UVIndexCard({ lat, lon, cityName, region }: UVIndexCardProps) {
       setError(null);
 
       try {
-        const data = await fetchGoogleUVIndex(lat, lon, cityName, region);
+        const params = new URLSearchParams({
+          lat: String(lat),
+          lon: String(lon),
+          cityName,
+        });
+        if (region) {
+          params.set('region', region);
+        }
+
+        const response = await fetch(`/api/uv-index?${params.toString()}`);
+        if (!response.ok) {
+          throw new Error('Failed to load UV index');
+        }
+        const data = (await response.json()) as UVIndexData;
         if (cancelled) {
           return;
         }

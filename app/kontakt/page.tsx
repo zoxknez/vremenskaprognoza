@@ -31,6 +31,7 @@ export default function KontaktPage() {
     name: "",
     email: "",
     message: "",
+    website: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -71,7 +72,7 @@ export default function KontaktPage() {
     setSubmitted(false);
     setError(null);
     setFieldErrors({});
-    setFormData({ name: "", email: "", message: "" });
+    setFormData({ name: "", email: "", message: "", website: "" });
   };
 
   return (
@@ -212,6 +213,16 @@ export default function KontaktPage() {
                 </motion.div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  <input
+                    type="text"
+                    name="website"
+                    value={formData.website}
+                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                    autoComplete="off"
+                    tabIndex={-1}
+                    className="hidden"
+                    aria-hidden="true"
+                  />
                   {error && (
                     <div className="flex items-start gap-3 rounded-xl border border-red-400/30 bg-red-500/10 p-4">
                       <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-300" />

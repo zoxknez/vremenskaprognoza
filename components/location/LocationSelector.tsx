@@ -3,7 +3,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Loader2, MapPin, Search, X } from 'lucide-react';
 
-import { geocodeLocation, type GeocodeResult } from '@/lib/api/geocoding';
 import { getFeaturedCities, searchCities, type City } from '@/lib/api/world-locations';
 import { useToast } from '@/lib/hooks/useToast';
 
@@ -13,6 +12,16 @@ interface LocationSelectorProps {
 }
 
 type SelectableLocation = { name: string; lat: number; lon: number; country?: string };
+type GeocodeResult = {
+  name: string;
+  displayName: string;
+  lat: number;
+  lon: number;
+  country?: string;
+  countryCode?: string;
+  type: 'city' | 'address' | 'poi' | 'region';
+  importance?: number;
+};
 
 export function LocationSelector({ onLocationSelect, currentLocation }: LocationSelectorProps) {
   const { toast } = useToast();
@@ -39,7 +48,30 @@ export function LocationSelector({ onLocationSelect, currentLocation }: Location
 
     try {
       const localResults = searchCities(query, 5);
-      const geocodeResults = await geocodeLocation(query);
+      let geocodeResults: GeocodeResult[] = [];
+
+      try {
+        const response = await fetch(`/api/geocoding?q=${encodeURIComponent(query)}&limit=5`);
+        if (response.ok) {
+          const data = await response.json();
+          geocodeResults = (data.results || []).map((item: {
+            name: string;
+            displayName: string;
+            lat: number;
+            lon: number;
+            country?: string;
+          }) => ({
+            name: item.name,
+            displayName: item.displayName,
+            lat: item.lat,
+            lon: item.lon,
+            country: item.country,
+            type: 'city' as const,
+          }));
+        }
+      } catch {
+        geocodeResults = [];
+      }
 
       const combinedResults: GeocodeResult[] = [
         ...localResults.map((city) => ({

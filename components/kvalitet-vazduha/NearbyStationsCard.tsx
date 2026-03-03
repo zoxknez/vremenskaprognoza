@@ -40,6 +40,12 @@ export function NearbyStationsCard({ stations, onSelectStation }: NearbyStations
             </div>
 
             <div className="space-y-3">
+                {stations.length === 0 && (
+                    <div className="p-3 rounded-xl bg-slate-700/20 text-slate-400 text-sm">
+                        Trenutno nema dostupnih podataka o obližnjim stanicama.
+                    </div>
+                )}
+
                 {stations.map((station, index) => (
                     <motion.button
                         key={station.name}

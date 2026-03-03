@@ -9,7 +9,7 @@
 // 1. USING IN REACT COMPONENTS
 // ============================================================================
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { CityRankingData } from '@/lib/api/air-quality-stats';
 
 export function CityRankingExample() {
@@ -233,7 +233,7 @@ export function useRankings(type: 'best' | 'worst' | 'all' = 'all', limit = 10) 
   const [error, setError] = useState<string | null>(null);
   const [cached, setCached] = useState(false);
 
-  const refresh = async (forceFresh = false) => {
+  const refresh = useCallback(async (forceFresh = false) => {
     setLoading(true);
     setError(null);
     
@@ -253,11 +253,11 @@ export function useRankings(type: 'best' | 'worst' | 'all' = 'all', limit = 10) 
     } finally {
       setLoading(false);
     }
-  };
+  }, [type, limit]);
 
   useEffect(() => {
     refresh();
-  }, [type, limit]);
+  }, [refresh]);
 
   return { rankings, loading, error, cached, refresh };
 }
@@ -273,6 +273,7 @@ export function MyComponent() {
     <div>
       <button onClick={() => refresh(true)}>Refresh Data</button>
       {cached && <span>Data from cache</span>}
+      <p>Total rankings: {rankings.length}</p>
       {/* Render rankings */}
     </div>
   );

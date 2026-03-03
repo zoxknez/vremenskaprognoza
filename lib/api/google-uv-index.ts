@@ -104,7 +104,7 @@ export async function fetchGoogleUVIndex(
     region?: string
 ): Promise<UVIndexData | null> {
     // For now, use OpenWeather as they have UV index
-    const openWeatherKey = process.env.OPENWEATHER_API_KEY || process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
+    const openWeatherKey = process.env.OPENWEATHER_API_KEY;
 
     if (!openWeatherKey) {
         console.warn('OpenWeather API key not configured for UV index');
@@ -152,7 +152,7 @@ export async function fetchGoogleUVIndex(
                     }));
                 }
             }
-        } catch (error) {
+        } catch {
             // Forecast is optional
             console.warn('UV forecast not available');
         }

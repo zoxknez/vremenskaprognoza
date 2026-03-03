@@ -44,7 +44,7 @@ export async function fetchSensorCommunityBalkanData(): Promise<AirQualityData[]
 
       const data = await response.json();
       return processSensorData(data, countryCode as BalkanCountryCode);
-    } catch (error) {
+    } catch {
       return [];
     }
   });

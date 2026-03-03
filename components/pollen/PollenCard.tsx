@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, Calendar, Flower2, Trees, Wind } from 'lucide-react';
 
-import { fetchGooglePollen, type PollenData, type PollenIndexLevel, getPollenLevelColor } from '@/lib/api/google-pollen';
+import type { PollenData, PollenIndexLevel } from '@/lib/api/google-pollen';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/Skeleton';
 
@@ -23,6 +23,45 @@ function getLevelText(level: PollenIndexLevel): string {
     VERY_HIGH: 'Veoma visok',
   };
   return labels[level];
+}
+
+function getPollenLevelColor(level: PollenIndexLevel): {
+  bg: string;
+  text: string;
+  border: string;
+} {
+  switch (level) {
+    case 'NONE':
+      return {
+        bg: 'bg-slate-500/10',
+        text: 'text-slate-600 dark:text-slate-400',
+        border: 'border-gray-500/20',
+      };
+    case 'LOW':
+      return {
+        bg: 'bg-green-500/10',
+        text: 'text-green-600 dark:text-green-400',
+        border: 'border-green-500/20',
+      };
+    case 'MEDIUM':
+      return {
+        bg: 'bg-yellow-500/10',
+        text: 'text-yellow-600 dark:text-yellow-400',
+        border: 'border-yellow-500/20',
+      };
+    case 'HIGH':
+      return {
+        bg: 'bg-orange-500/10',
+        text: 'text-orange-600 dark:text-orange-400',
+        border: 'border-orange-500/20',
+      };
+    case 'VERY_HIGH':
+      return {
+        bg: 'bg-red-500/10',
+        text: 'text-red-600 dark:text-red-400',
+        border: 'border-red-500/20',
+      };
+  }
 }
 
 function getOverallTip(level: PollenIndexLevel): string {
@@ -51,7 +90,20 @@ export function PollenCard({ lat, lon, cityName, region }: PollenCardProps) {
       setError(null);
 
       try {
-        const data = await fetchGooglePollen(lat, lon, cityName, region);
+        const params = new URLSearchParams({
+          lat: String(lat),
+          lon: String(lon),
+          cityName,
+        });
+        if (region) {
+          params.set('region', region);
+        }
+
+        const response = await fetch(`/api/pollen?${params.toString()}`);
+        if (!response.ok) {
+          throw new Error('Failed to load pollen data');
+        }
+        const data = (await response.json()) as PollenData;
         if (!cancelled) {
           setPollenData(data);
         }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useI18n } from '@/lib/i18n/context';
-import { Locale, SUPPORTED_LOCALES } from '@/lib/i18n/translations';
+import { Locale } from '@/lib/i18n/translations';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,

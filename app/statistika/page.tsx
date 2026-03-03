@@ -53,7 +53,7 @@ const DATE_PRESETS = [
 ];
 
 // Generate mock data based on city and date range
-const generateMockData = (cityName: string, dateRange: string): {
+const generateMockData = (cityName: string): {
   monthly: MonthlyData[];
   yearly: YearlyData[];
   polluted: PollutedDay[];
@@ -125,7 +125,7 @@ function StatistikaContent() {  const [selectedCity, setSelectedCity] = useState
 
   // Generate data based on selected city and date range
   const { monthly: monthlyAverages, yearly: yearlyComparison, polluted: topPollutedDays } = 
-    generateMockData(selectedCity.name, dateRange);
+    generateMockData(selectedCity.name);
 
   const maxTemp = Math.max(...monthlyAverages.map(m => m.temp));
   const maxAqi = Math.max(...monthlyAverages.map(m => m.aqi));
@@ -443,6 +443,15 @@ function StatistikaContent() {  const [selectedCity, setSelectedCity] = useState
           </AnimatePresence>
 
           {/* Quick Stats */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-amber-200"
+          >
+            Prikaz statistike trenutno koristi aproksimaciju zasnovanu na dostupnim podacima i nije zvanični istorijski izveštaj.
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}

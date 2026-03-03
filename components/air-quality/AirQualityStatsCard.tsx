@@ -118,7 +118,7 @@ export function AirQualityStatsCard() {
   };
 
   const activeSources = Object.entries(stats.stats.sourcesCount)
-    .filter(([_, count]) => count > 0)
+    .filter(([, count]) => count > 0)
     .sort((a, b) => b[1] - a[1]);
 
   return (

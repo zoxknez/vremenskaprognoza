@@ -139,7 +139,7 @@ function determineLocationType(osmType: string): 'city' | 'address' | 'poi' | 'r
 
 /*
 export async function geocodeLocationGoogle(query: string): Promise<GeocodeResult[]> {
-  const apiKey = process.env.GOOGLE_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+  const apiKey = process.env.GOOGLE_API_KEY;
   
   if (!apiKey) {
     console.warn('Google API key not configured, falling back to Nominatim');

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { logger } from '@/lib/utils/logger';
 
 export function useServiceWorkerUpdate() {
   const [updateAvailable, setUpdateAvailable] = useState(false);

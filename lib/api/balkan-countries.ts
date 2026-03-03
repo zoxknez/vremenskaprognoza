@@ -1,6 +1,3 @@
-import { AirQualityData, AirQualitySource } from '@/lib/types/air-quality';
-import { calculateAQI } from '@/lib/types/air-quality';
-
 // Balkanske zemlje sa koordinatama glavnih gradova
 export const BALKAN_COUNTRIES = {
   RS: {

@@ -5,7 +5,7 @@ import { AirQualityData, AQI_COLORS } from '@/lib/types/air-quality';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils/cn';
-import { Gauge, MapPin, Clock, Wind } from 'lucide-react';
+import { Gauge, MapPin, Clock } from 'lucide-react';
 
 interface AirQualityCardProps {
   data: AirQualityData;

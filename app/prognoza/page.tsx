@@ -59,6 +59,7 @@ export default function PrognozaPage() {
   const [hourlyForecast, setHourlyForecast] = useState<HourlyForecast[]>([]);
   const [dailyForecast, setDailyForecast] = useState<DailyForecast[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"hourly" | "daily">("hourly");
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -94,6 +95,7 @@ export default function PrognozaPage() {
 
   const fetchForecast = async (city: SearchResult) => {
     setLoading(true);
+    setError(null);
 
     try {
       const response = await fetch(
@@ -109,63 +111,20 @@ export default function PrognozaPage() {
       }
 
       if (data.daily) {
-        // Add feels like temperatures to daily forecast
+        // Add deterministic feels-like values when API does not provide them.
         const enhancedDaily = data.daily.map((day: DailyForecast) => ({
           ...day,
-          feelsLikeMax: Math.round(day.tempMax - 2 + Math.random() * 4),
-          feelsLikeMin: Math.round(day.tempMin - 2 + Math.random() * 4),
+          feelsLikeMax: day.feelsLikeMax ?? day.tempMax,
+          feelsLikeMin: day.feelsLikeMin ?? day.tempMin,
         }));
         setDailyForecast(enhancedDaily);
       }
 
     } catch (error) {
       console.error("Forecast fetch error:", error);
-
-      // Generate mock data if API fails
-      const mockHourly: HourlyForecast[] = [];
-      const baseTemp = 20;
-
-      for (let i = 0; i < 48; i++) {
-        const time = new Date();
-        time.setHours(time.getHours() + i);
-        mockHourly.push({
-          time: time.toISOString(),
-          temp: Math.round(baseTemp + Math.sin(i / 4) * 8 + (Math.random() - 0.5) * 4),
-          feelsLike: Math.round(baseTemp + Math.sin(i / 4) * 6),
-          humidity: Math.round(50 + Math.random() * 30),
-          windSpeed: Math.round(5 + Math.random() * 15),
-          description: i % 4 === 0 ? "Suncano" : i % 4 === 1 ? "Oblacno" : i % 4 === 2 ? "Delimicno oblacno" : "Kisa",
-          icon: "04d",
-          pop: Math.round(Math.random() * 50),
-        });
-      }
-      setHourlyForecast(mockHourly);
-
-      const mockDaily: DailyForecast[] = [];
-      const days = ["Nedelja", "Ponedeljak", "Utorak", "Sreda", "Cetvrtak", "Petak", "Subota"];
-
-      for (let i = 0; i < 7; i++) {
-        const date = new Date();
-        date.setDate(date.getDate() + i);
-        const tempMax = Math.round(baseTemp + 5 + Math.random() * 5);
-        const tempMin = Math.round(baseTemp - 5 - Math.random() * 5);
-        mockDaily.push({
-          date: date.toISOString(),
-          dayName: days[date.getDay()],
-          tempMax,
-          tempMin,
-          feelsLikeMax: Math.round(tempMax - 2 + Math.random() * 4),
-          feelsLikeMin: Math.round(tempMin - 2 + Math.random() * 4),
-          humidity: Math.round(50 + Math.random() * 30),
-          windSpeed: Math.round(5 + Math.random() * 15),
-          description: i % 3 === 0 ? "Suncano" : i % 3 === 1 ? "Oblacno" : "Kisa",
-          icon: "04d",
-          pop: Math.round(Math.random() * 60),
-          sunrise: "06:30",
-          sunset: "20:15",
-        });
-      }
-      setDailyForecast(mockDaily);
+      setError("Nije moguće učitati prognozu za izabrani grad.");
+      setHourlyForecast([]);
+      setDailyForecast([]);
 
     } finally {
       setLoading(false);
@@ -285,8 +244,14 @@ export default function PrognozaPage() {
           </div>
         )}
 
+        {!loading && error && (
+          <div className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-300">
+            {error}
+          </div>
+        )}
+
         {/* Content */}
-        {!loading && (
+        {!loading && !error && (
           <>
             {/* Aggregated Forecast Summary */}
             <ForecastSummary daily={dailyForecast} hourly={hourlyForecast} />

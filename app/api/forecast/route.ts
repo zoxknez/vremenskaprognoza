@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiKey } from '@/lib/config/env';
 import { handleAPIError, createErrorResponse } from '@/lib/utils/api-error';
+import { coordinatesSchema } from '@/lib/utils/validation';
+import { enforceRateLimit, requireSameOrigin } from '@/lib/utils/request-security';
 
 const OPENWEATHER_API_KEY = getApiKey('openweather');
 
@@ -38,21 +40,45 @@ function translateWeather(description: string): string {
 }
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const lat = searchParams.get('lat');
-  const lon = searchParams.get('lon');
+  const sameOriginError = requireSameOrigin(request);
+  if (sameOriginError) {
+    return sameOriginError;
+  }
 
-  if (!lat || !lon) {
+  const rateLimitError = await enforceRateLimit(request, {
+    prefix: 'api:forecast',
+    limit: 90,
+    windowMs: 60 * 1000,
+  });
+  if (rateLimitError) {
+    return rateLimitError;
+  }
+
+  const searchParams = request.nextUrl.searchParams;
+  const lat = searchParams.get('lat') || '';
+  const lon = searchParams.get('lon') || '';
+
+  if (!OPENWEATHER_API_KEY) {
+    return NextResponse.json(
+      { error: 'OpenWeather API key not configured' },
+      { status: 503 }
+    );
+  }
+
+  const validation = coordinatesSchema.safeParse({ lat, lon });
+  if (!validation.success) {
     return NextResponse.json(
       { error: 'Latitude and longitude are required' },
       { status: 400 }
     );
   }
 
+  const { lat: latitude, lon: longitude } = validation.data;
+
   try {
     // Fetch 5-day forecast (3-hour intervals)
     const forecastResponse = await fetch(
-      `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric&lang=en`
+      `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&appid=${OPENWEATHER_API_KEY}&units=metric&lang=en`
     );
 
     if (!forecastResponse.ok) {
@@ -107,7 +133,7 @@ export async function GET(request: NextRequest) {
 
     try {
       const currentWeatherResponse = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`
+        `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${OPENWEATHER_API_KEY}&units=metric`
       );
       if (currentWeatherResponse.ok) {
         const currentData = await currentWeatherResponse.json();

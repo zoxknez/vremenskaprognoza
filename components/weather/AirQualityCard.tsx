@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Leaf, ChevronRight, Info, Wind, ChevronDown, ChevronUp } from "lucide-react";
+import { Leaf, ChevronRight, Wind, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { WeatherData } from "@/lib/types/weather";

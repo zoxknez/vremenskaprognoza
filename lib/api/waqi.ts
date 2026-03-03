@@ -5,7 +5,7 @@ import { calculateAQI } from '@/lib/types/air-quality';
 // Free tier: 1000 requests/day
 const WAQI_API_BASE = 'https://api.waqi.info';
 
-export async function fetchWAQIData(city: string = 'Belgrade'): Promise<AirQualityData[]> {
+export async function fetchWAQIData(): Promise<AirQualityData[]> {
   try {
     // Try multiple Serbian cities
     const cities = ['Belgrade', 'Novi Sad', 'Nis', 'Kragujevac', 'Subotica'];
@@ -65,14 +65,14 @@ export async function fetchWAQIData(city: string = 'Belgrade'): Promise<AirQuali
             });
           }
         }
-      } catch (error) {
+      } catch {
         // Continue to next city
         continue;
       }
     }
 
     return results;
-  } catch (error) {
+  } catch {
     return [];
   }
 }

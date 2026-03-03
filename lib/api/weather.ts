@@ -85,7 +85,7 @@ async function fetchWeatherForLocation(
   lon: number,
   cityName: string
 ): Promise<MeteorologicalData | null> {
-  const apiKey = process.env.OPENWEATHER_API_KEY || process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
+  const apiKey = process.env.OPENWEATHER_API_KEY;
   
   if (!apiKey) {
     console.warn('OpenWeather API key not configured');
@@ -179,7 +179,7 @@ export async function getCityWeather(cityName: string): Promise<MeteorologicalDa
   }
 
   // If not found, try geocoding
-  const apiKey = process.env.OPENWEATHER_API_KEY || process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
+  const apiKey = process.env.OPENWEATHER_API_KEY;
   if (!apiKey) return null;
 
   try {

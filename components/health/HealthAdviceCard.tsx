@@ -8,11 +8,9 @@ import {
   getActivityRecommendation,
 } from '@/lib/health/advice';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils/cn';
 import {
   Heart,
-  Wind,
   AlertTriangle,
   CheckCircle,
   XCircle,

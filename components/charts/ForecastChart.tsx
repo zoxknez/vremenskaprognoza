@@ -28,7 +28,7 @@ interface ForecastChartProps {
   }>;
 }
 
-export function ForecastChart({ hourlyData, dailyData }: ForecastChartProps) {
+export function ForecastChart({ hourlyData }: ForecastChartProps) {
   const chartData = useMemo(() => {
     return hourlyData.map((item) => ({
       time: new Date(item.timestamp).toLocaleTimeString('sr-RS', {

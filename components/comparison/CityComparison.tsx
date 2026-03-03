@@ -11,7 +11,6 @@ import {
   ArrowUp,
   ArrowDown,
   X,
-  Plus,
   BarChart3,
   TrendingUp,
   TrendingDown,

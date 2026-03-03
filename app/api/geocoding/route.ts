@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiKey } from '@/lib/config/env';
 import { handleAPIError, createErrorResponse } from '@/lib/utils/api-error';
+import { coordinatesSchema } from '@/lib/utils/validation';
+import { enforceRateLimit, requireSameOrigin } from '@/lib/utils/request-security';
 
 const OPENWEATHER_API_KEY = getApiKey('openweather');
 
@@ -14,9 +16,26 @@ export interface GeocodingResult {
 }
 
 export async function GET(request: NextRequest) {
+  const sameOriginError = requireSameOrigin(request);
+  if (sameOriginError) {
+    return sameOriginError;
+  }
+
+  const rateLimitError = await enforceRateLimit(request, {
+    prefix: 'api:geocoding',
+    limit: 120,
+    windowMs: 60 * 1000,
+  });
+  if (rateLimitError) {
+    return rateLimitError;
+  }
+
   const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get('q');
-  const limit = searchParams.get('limit') || '5';
+  const parsedLimit = Number.parseInt(searchParams.get('limit') || '5', 10);
+  const limit = Number.isFinite(parsedLimit)
+    ? Math.min(Math.max(parsedLimit, 1), 10)
+    : 5;
   const lat = searchParams.get('lat');
   const lon = searchParams.get('lon');
   const reverse = searchParams.get('reverse');
@@ -24,15 +43,25 @@ export async function GET(request: NextRequest) {
   if (!OPENWEATHER_API_KEY) {
     return NextResponse.json(
       { error: 'OpenWeather API key not configured' },
-      { status: 500 }
+      { status: 503 }
     );
   }
 
   // Reverse geocoding - get city name from coordinates
-  if (reverse === 'true' && lat && lon) {
+  const wantsReverse = (reverse === 'true' || (!query && lat && lon)) && lat && lon;
+  if (wantsReverse) {
+    const coordinates = coordinatesSchema.safeParse({ lat, lon });
+    if (!coordinates.success) {
+      return NextResponse.json(
+        { error: 'Invalid coordinates' },
+        { status: 400 }
+      );
+    }
+
+    const { lat: latitude, lon: longitude } = coordinates.data;
     try {
       const response = await fetch(
-        `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${OPENWEATHER_API_KEY}`,
+        `https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=1&appid=${OPENWEATHER_API_KEY}`,
         { next: { revalidate: 3600 } }
       );
 
@@ -65,9 +94,9 @@ export async function GET(request: NextRequest) {
   }
 
   // Forward geocoding - search by city name
-  if (!query || query.length < 2) {
+  if (!query || query.length < 2 || query.length > 120) {
     return NextResponse.json(
-      { error: 'Query parameter "q" is required and must be at least 2 characters' },
+      { error: 'Query parameter "q" must be between 2 and 120 characters' },
       { status: 400 }
     );
   }

@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { fetchAllAirQualityData } from '@/lib/api/aggregate';
 import { getCityRankings, getWorstCities, getBestCities } from '@/lib/api/air-quality-stats';
 import { cityRankingCache } from '@/lib/api/city-ranking-cache';
+import { enforceRateLimit, requireSameOrigin } from '@/lib/utils/request-security';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 300; // Cache for 5 minutes
@@ -16,7 +17,21 @@ export const revalidate = 300; // Cache for 5 minutes
  * 
  * Returns comprehensive city rankings with data quality indicators
  */
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  const sameOriginError = requireSameOrigin(request);
+  if (sameOriginError) {
+    return sameOriginError;
+  }
+
+  const rateLimitError = await enforceRateLimit(request, {
+    prefix: 'api:air-quality-rankings',
+    limit: 90,
+    windowMs: 60 * 1000,
+  });
+  if (rateLimitError) {
+    return rateLimitError;
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
@@ -116,10 +131,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error fetching city rankings:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to fetch city rankings',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
+      { error: 'Failed to fetch city rankings' },
       { status: 500 }
     );
   }

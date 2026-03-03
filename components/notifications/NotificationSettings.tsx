@@ -149,7 +149,7 @@ export function NotificationSettings({ userId = 'anonymous' }: NotificationSetti
       // Save to localStorage as demo
       localStorage.setItem('airquality_email', email);
       localStorage.setItem('airquality_email_prefs', JSON.stringify(preferences));
-    } catch (err) {
+    } catch {
       setError('Greska pri pretplati na email');
     } finally {
       setLoading(false);

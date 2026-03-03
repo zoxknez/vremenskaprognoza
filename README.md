@@ -84,12 +84,19 @@ WAQI_API_TOKEN=your_waqi_token
 AQICN_API_TOKEN=your_aqicn_token
 AIRVISUAL_API_KEY=your_airvisual_key
 RESEND_API_KEY=your_resend_key
+NOTIFICATIONS_API_TOKEN=your_internal_token
+UPSTASH_REDIS_REST_URL=https://your-instance.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your_upstash_rest_token
 
 # Database (opciono)
 DATABASE_URL=postgresql://user:password@host/database
 ```
 
-> **Napomena:** Aplikacija radi i bez API ključeva - koristi mock podatke za demo.
+
+> **Napomena:** Bez API kljuceva aplikacija se pokrece, ali podaci nece biti dostupni za servise koji zahtevaju autentikaciju.
+> **Bezbednost:** Tajne kljuceve drzi iskljucivo u server varijablama (bez NEXT_PUBLIC_ prefiksa).
+> **Rate limit backend:** Ako `UPSTASH_REDIS_REST_URL` i `UPSTASH_REDIS_REST_TOKEN` nisu setovani, koristi se in-memory fallback.
+> **Health endpoint:** `/api/health/rate-limit` vraca aktivni rate-limit backend (`upstash` ili `memory`).
 
 ## 📦 Build za produkciju
 
@@ -147,3 +154,4 @@ MIT © 2025
 <p align="center">
   Made with ❤️ for the Balkans
 </p>
+

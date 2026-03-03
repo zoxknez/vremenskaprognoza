@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { AirQualityData } from '@/lib/types/air-quality';
-import { calculateDistance, formatDistance } from '@/lib/utils/geo';
+import { calculateDistance } from '@/lib/utils/geo';
 
 // Re-export for backwards compatibility
 export { formatDistance } from '@/lib/utils/geo';

@@ -10,7 +10,6 @@
  */
 
 import { AirQualityData, AirQualitySource, AQICategory } from '@/lib/types/air-quality';
-import { calculateAQI } from '@/lib/types/air-quality';
 
 const GOOGLE_AIR_QUALITY_API_BASE = 'https://airquality.googleapis.com/v1';
 
@@ -123,7 +122,7 @@ export async function fetchGoogleAirQuality(
     cityName: string,
     region?: string
 ): Promise<AirQualityData | null> {
-    const apiKey = process.env.GOOGLE_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+    const apiKey = process.env.GOOGLE_API_KEY;
 
     if (!apiKey) {
         console.warn('Google API key not configured');
@@ -255,7 +254,7 @@ export async function fetchGoogleAirQualityForecast(
     lat: number,
     lon: number
 ): Promise<GoogleAirQualityResponse[]> {
-    const apiKey = process.env.GOOGLE_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+    const apiKey = process.env.GOOGLE_API_KEY;
 
     if (!apiKey) {
         console.warn('Google API key not configured');

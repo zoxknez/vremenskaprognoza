@@ -54,7 +54,7 @@ export function useBrowserNotification() {
  * Koristi samo ako korisnik eksplicitno dozvoli notifikacije.
  */
 export function PWAUpdateNotification() {
-  const { permission, requestPermission, showNotification } = useBrowserNotification();
+  const { permission, showNotification } = useBrowserNotification();
   const [hasShownNotification, setHasShownNotification] = useState(false);
 
   useEffect(() => {

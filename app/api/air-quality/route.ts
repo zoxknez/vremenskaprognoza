@@ -3,10 +3,25 @@ import { fetchAllAirQualityData } from '@/lib/api/aggregate';
 import { calculateAQI } from '@/lib/utils/aqi';
 import { getApiKey } from '@/lib/config/env';
 import { airQualityQuerySchema, parseQueryParams, formatZodErrors } from '@/lib/utils/validation';
+import { enforceRateLimit, requireSameOrigin } from '@/lib/utils/request-security';
 
 const OPENWEATHER_API_KEY = getApiKey('openweather');
 
 export async function GET(request: NextRequest) {
+  const sameOriginError = requireSameOrigin(request);
+  if (sameOriginError) {
+    return sameOriginError;
+  }
+
+  const rateLimitError = await enforceRateLimit(request, {
+    prefix: 'api:air-quality',
+    limit: 120,
+    windowMs: 60 * 1000,
+  });
+  if (rateLimitError) {
+    return rateLimitError;
+  }
+
   const searchParams = request.nextUrl.searchParams;
 
   // Zod validacija parametara
@@ -24,6 +39,13 @@ export async function GET(request: NextRequest) {
   try {
     // If lat/lon provided, fetch air quality for specific location
     if (lat && lon) {
+      if (!OPENWEATHER_API_KEY) {
+        return NextResponse.json(
+          { error: 'OpenWeather API key not configured' },
+          { status: 503 }
+        );
+      }
+
       const aqiResponse = await fetch(
         `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}`
       );

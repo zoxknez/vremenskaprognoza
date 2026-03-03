@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { coordinatesSchema } from '@/lib/utils/validation';
-import { getAQILabel } from '@/lib/utils/aqi';
+import { getAQILabel, calculateAQIFromPM25 } from '@/lib/utils/aqi';
+import { enforceRateLimit, requireSameOrigin } from '@/lib/utils/request-security';
 
 /**
  * API endpoint for AQI history data
@@ -11,6 +12,20 @@ import { getAQILabel } from '@/lib/utils/aqi';
  * This endpoint returns forecast data as a reasonable approximation.
  */
 export async function GET(request: NextRequest) {
+    const sameOriginError = requireSameOrigin(request);
+    if (sameOriginError) {
+        return sameOriginError;
+    }
+
+    const rateLimitError = await enforceRateLimit(request, {
+        prefix: 'api:air-quality-history',
+        limit: 90,
+        windowMs: 60 * 1000,
+    });
+    if (rateLimitError) {
+        return rateLimitError;
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const lat = searchParams.get('lat');
     const lon = searchParams.get('lon');
@@ -63,7 +78,7 @@ export async function GET(request: NextRequest) {
         // Calculate AQI from PM2.5 (simplified US EPA calculation)
         const history = entries.map((item: any) => {
             const pm25 = item.components?.pm2_5 || 0;
-            const aqi = calculateSimpleAQI(pm25);
+            const aqi = calculateAQIFromPM25(pm25);
             const time = new Date(item.dt * 1000);
 
             return {
@@ -87,20 +102,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             history: [],
             error: 'Nije moguće učitati istorijske podatke',
-        });
+        }, { status: 500 });
     }
-}
-
-/**
- * Simplified AQI calculation from PM2.5
- * Based on US EPA breakpoints
- */
-function calculateSimpleAQI(pm25: number): number {
-    if (pm25 <= 12) return (pm25 / 12) * 50;
-    if (pm25 <= 35.4) return 50 + ((pm25 - 12) / 23.4) * 50;
-    if (pm25 <= 55.4) return 100 + ((pm25 - 35.4) / 20) * 50;
-    if (pm25 <= 150.4) return 150 + ((pm25 - 55.4) / 95) * 50;
-    if (pm25 <= 250.4) return 200 + ((pm25 - 150.4) / 100) * 100;
-    if (pm25 <= 350.4) return 300 + ((pm25 - 250.4) / 100) * 100;
-    return 400 + ((pm25 - 350.4) / 150) * 100;
 }

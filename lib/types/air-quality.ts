@@ -1,3 +1,4 @@
+import { calculateAQI as calculatePmAQI, getAQICategory } from '@/lib/utils/aqi';
 export type AirQualitySource = 'sepa' | 'openaq' | 'sensor-community' | 'allthingstalk' | 'waqi' | 'openweather' | 'aqicn' | 'airvisual' | 'google';
 
 // Unified AQI Category type - US EPA standard
@@ -88,37 +89,23 @@ export function calculateAQI(pm25?: number, pm10?: number, no2?: number, o3?: nu
   aqi: number;
   category: AQICategory;
 } {
-  // Simplified AQI calculation based on US EPA standards
-  // In production, use proper AQI calculation
-  let maxAQI = 0;
+  // PM2.5 / PM10 are calculated using the central US EPA breakpoint logic.
+  let maxAQI = calculatePmAQI(pm25, pm10);
 
-  if (pm25) {
-    const pm25AQI = Math.min(500, Math.max(0, (pm25 / 12) * 50));
-    maxAQI = Math.max(maxAQI, pm25AQI);
-  }
-
-  if (pm10) {
-    const pm10AQI = Math.min(500, Math.max(0, (pm10 / 50) * 50));
-    maxAQI = Math.max(maxAQI, pm10AQI);
-  }
-
-  if (no2) {
+  // Keep compatibility for sources that provide only NO2 or O3 values.
+  if (typeof no2 === 'number' && no2 >= 0) {
     const no2AQI = Math.min(500, Math.max(0, (no2 / 100) * 50));
     maxAQI = Math.max(maxAQI, no2AQI);
   }
 
-  if (o3) {
+  if (typeof o3 === 'number' && o3 >= 0) {
     const o3AQI = Math.min(500, Math.max(0, (o3 / 100) * 50));
     maxAQI = Math.max(maxAQI, o3AQI);
   }
 
-  let category: AQICategory = 'good';
-  if (maxAQI >= 300) category = 'hazardous';
-  else if (maxAQI >= 200) category = 'veryUnhealthy';
-  else if (maxAQI >= 150) category = 'unhealthy';
-  else if (maxAQI >= 100) category = 'sensitive';
-  else if (maxAQI >= 50) category = 'moderate';
-
-  return { aqi: Math.round(maxAQI), category };
+  return {
+    aqi: Math.round(maxAQI),
+    category: getAQICategory(maxAQI),
+  };
 }
 

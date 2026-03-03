@@ -160,10 +160,10 @@ export default function MapPage() {
               name: 'Moja lokacija',
               lat: latitude,
               lng: longitude,
-              temp: Math.round(data.temperature || 20),
-              aqi: data.aqi || 50,
-              humidity: data.humidity || 60,
-              windSpeed: Math.round((data.windSpeed || 3) * 3.6),
+              temp: Math.round(data.temperature || 0),
+              aqi: typeof data.aqi === 'number' ? data.aqi : 0,
+              humidity: data.humidity || 0,
+              windSpeed: Math.round((data.windSpeed || 0) * 3.6),
             };
             
             // Remove previous user location and add new one
@@ -211,7 +211,7 @@ export default function MapPage() {
       for (let i = 0; i < MAP_CITIES.length; i += BATCH_SIZE) {
         const batch = MAP_CITIES.slice(i, i + BATCH_SIZE);
         
-        const batchPromises = batch.map(async (city) => {
+        const batchPromises = batch.map(async (city): Promise<LocationData | null> => {
           try {
             const response = await fetch(
               `/api/weather?lat=${city.lat}&lon=${city.lng}&city=${encodeURIComponent(city.name)}`
@@ -224,31 +224,22 @@ export default function MapPage() {
                 name: city.name,
                 lat: city.lat,
                 lng: city.lng,
-                temp: Math.round(data.temperature || 20),
-                aqi: data.aqi || Math.floor(Math.random() * 100) + 30,
-                humidity: data.humidity || 60,
-                windSpeed: Math.round((data.windSpeed || 3) * 3.6),
+                temp: Math.round(data.temperature || 0),
+                aqi: typeof data.aqi === 'number' ? data.aqi : 0,
+                humidity: data.humidity || 0,
+                windSpeed: Math.round((data.windSpeed || 0) * 3.6),
               };
             }
           } catch (e) {
             console.error(`Error fetching data for ${city.name}`, e);
           }
-          
-          // Fallback data
-          return {
-            id: city.id,
-            name: city.name,
-            lat: city.lat,
-            lng: city.lng,
-            temp: Math.floor(Math.random() * 15) + 15,
-            aqi: Math.floor(Math.random() * 100) + 30,
-            humidity: Math.floor(Math.random() * 30) + 50,
-            windSpeed: Math.floor(Math.random() * 20) + 5,
-          };
+
+          return null;
         });
 
         const batchResults = await Promise.all(batchPromises);
-        setLocations(prev => [...prev, ...batchResults]);
+        const validResults = batchResults.filter((item): item is LocationData => item !== null);
+        setLocations(prev => [...prev, ...validResults]);
       }
 
       setDataLoading(false);
@@ -287,8 +278,8 @@ export default function MapPage() {
           name: city.name,
           lat: city.lat,
           lng: city.lon,
-          temp: Math.round(data.temperature),
-          aqi: data.aqi || 0,
+          temp: Math.round(data.temperature || 0),
+          aqi: typeof data.aqi === 'number' ? data.aqi : 0,
           humidity: data.humidity || 0,
           windSpeed: Math.round((data.windSpeed || 0) * 3.6),
         };

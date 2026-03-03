@@ -14,6 +14,22 @@ interface AQIHistoryChartProps {
 }
 
 export function AQIHistoryChart({ history }: AQIHistoryChartProps) {
+    if (history.length === 0) {
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-3xl bg-slate-800/30 border border-slate-700/50 backdrop-blur-xl p-6"
+            >
+                <div className="flex items-center gap-3 mb-4">
+                    <BarChart3 className="w-6 h-6 text-cyan-400" />
+                    <h3 className="text-xl font-semibold text-white">Istorija AQI (24h)</h3>
+                </div>
+                <p className="text-slate-400 text-sm">Istorijski podaci trenutno nisu dostupni.</p>
+            </motion.div>
+        );
+    }
+
     const maxAqi = Math.max(...history.map(h => h.aqi), 100);
 
     return (

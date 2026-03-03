@@ -75,14 +75,14 @@ export async function fetchOpenWeatherData(): Promise<AirQualityData[]> {
             lastUpdated: new Date(airData.dt * 1000).toISOString(),
           });
         }
-      } catch (error) {
+      } catch {
         // Continue to next city
         continue;
       }
     }
 
     return results;
-  } catch (error) {
+  } catch {
     return [];
   }
 }

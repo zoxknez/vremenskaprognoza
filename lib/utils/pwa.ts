@@ -21,7 +21,7 @@ export async function getCacheVersion(): Promise<string | null> {
   }
 
   try {
-    const registration = await navigator.serviceWorker.ready;
+    await navigator.serviceWorker.ready;
     const caches = await window.caches.keys();
     
     // Pronađi app cache (npr. 'air-quality-v5')

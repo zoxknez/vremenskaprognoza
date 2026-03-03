@@ -82,7 +82,7 @@ export async function fetchWAQIBalkanData(): Promise<AirQualityData[]> {
             });
           }
         }
-      } catch (error) {
+      } catch {
         continue;
       }
     }
@@ -117,7 +117,7 @@ export async function fetchWAQIByBounds(
     }
 
     return data.data.map((station: any) => {
-      const { aqi, category } = calculateAQI(station.aqi);
+      const { category } = calculateAQI(station.aqi);
 
       return {
         id: `waqi-map-${station.uid}`,

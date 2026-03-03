@@ -173,8 +173,16 @@ export function getAlertType(aqi: number, previousAqi?: number): AlertType | nul
 
 // Store subscriptions (in production, use a database)
 const subscriptions = new Map<string, PushSubscription>();
+const MAX_SUBSCRIPTIONS = 5000;
 
 export function storeSubscription(userId: string, subscription: PushSubscription): void {
+  if (!subscriptions.has(userId) && subscriptions.size >= MAX_SUBSCRIPTIONS) {
+    const oldestKey = subscriptions.keys().next().value;
+    if (oldestKey) {
+      subscriptions.delete(oldestKey);
+    }
+  }
+
   subscriptions.set(userId, subscription);
 }
 

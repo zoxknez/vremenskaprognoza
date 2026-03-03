@@ -210,32 +210,68 @@ export default function CityPage() {
         }
       }
 
-      const weather: WeatherData | null = weatherJson.main ? {
-        temp: Math.round(weatherJson.main.temp),
-        feelsLike: Math.round(weatherJson.main.feels_like),
-        humidity: weatherJson.main.humidity,
-        pressure: weatherJson.main.pressure,
-        windSpeed: Math.round((weatherJson.wind?.speed || 0) * 3.6), // m/s to km/h
-        windDeg: weatherJson.wind?.deg || 0,
-        visibility: Math.round((weatherJson.visibility || 10000) / 1000),
-        clouds: weatherJson.clouds?.all || 0,
-        description: weatherJson.weather?.[0]?.description || '',
-        icon: weatherJson.weather?.[0]?.icon || '01d',
-        sunrise: weatherJson.sys?.sunrise || 0,
-        sunset: weatherJson.sys?.sunset || 0,
-        uvi: weatherJson.uvi,
-      } : null;
+      const weather: WeatherData | null = (() => {
+        const hasFlattenedShape = typeof weatherJson?.temperature === 'number';
+        const hasLegacyShape = typeof weatherJson?.main?.temp === 'number';
+
+        if (!hasFlattenedShape && !hasLegacyShape) {
+          return null;
+        }
+
+        const rawWindSpeed = hasFlattenedShape
+          ? weatherJson.windSpeed
+          : weatherJson.wind?.speed;
+        const rawWindDeg = hasFlattenedShape
+          ? weatherJson.windDeg
+          : weatherJson.wind?.deg;
+
+        return {
+          temp: Math.round(hasFlattenedShape ? weatherJson.temperature : weatherJson.main.temp),
+          feelsLike: Math.round(hasFlattenedShape ? weatherJson.feelsLike : weatherJson.main.feels_like),
+          humidity: hasFlattenedShape ? weatherJson.humidity : weatherJson.main.humidity,
+          pressure: hasFlattenedShape ? weatherJson.pressure : weatherJson.main.pressure,
+          windSpeed: Math.round((rawWindSpeed || 0) * 3.6), // m/s to km/h
+          windDeg: rawWindDeg || 0,
+          visibility: Math.round((hasFlattenedShape ? weatherJson.visibility : weatherJson.visibility || 10000) / 1000),
+          clouds: weatherJson.clouds?.all || 0,
+          description: hasFlattenedShape
+            ? weatherJson.description || ''
+            : weatherJson.weather?.[0]?.description || '',
+          icon: hasFlattenedShape
+            ? weatherJson.icon || '01d'
+            : weatherJson.weather?.[0]?.icon || '01d',
+          sunrise: hasFlattenedShape ? weatherJson.sunrise || 0 : weatherJson.sys?.sunrise || 0,
+          sunset: hasFlattenedShape ? weatherJson.sunset || 0 : weatherJson.sys?.sunset || 0,
+          uvi: weatherJson.uvi,
+        };
+      })();
 
       const forecast: ForecastDay[] = (forecastJson.daily || forecastJson.list || [])
         .slice(0, 7)
         .map((day: Record<string, unknown>, index: number) => ({
-          date: day.dt ? new Date((day.dt as number) * 1000).toISOString() : '',
-          day: getDayName(day.dt ? new Date((day.dt as number) * 1000).toISOString() : '', index),
-          high: Math.round((day.temp as { max?: number })?.max ?? (day.main as { temp_max?: number })?.temp_max ?? 0),
-          low: Math.round((day.temp as { min?: number })?.min ?? (day.main as { temp_min?: number })?.temp_min ?? 0),
+          date: (day.date as string) || (day.dt ? new Date((day.dt as number) * 1000).toISOString() : ''),
+          day: getDayName(
+            (day.date as string) || (day.dt ? new Date((day.dt as number) * 1000).toISOString() : ''),
+            index
+          ),
+          high: Math.round(
+            (day.tempMax as number) ??
+            (day.temp as { max?: number })?.max ??
+            (day.main as { temp_max?: number })?.temp_max ??
+            0
+          ),
+          low: Math.round(
+            (day.tempMin as number) ??
+            (day.temp as { min?: number })?.min ??
+            (day.main as { temp_min?: number })?.temp_min ??
+            0
+          ),
           icon: (day.weather as { icon?: string }[])?.[0]?.icon || '01d',
-          description: (day.weather as { description?: string }[])?.[0]?.description || '',
-          pop: Math.round(((day.pop as number) || 0) * 100),
+          description:
+            (day.description as string) ||
+            (day.weather as { description?: string }[])?.[0]?.description ||
+            '',
+          pop: Math.round((day.pop as number) || 0),
         }));
 
       setCityData({

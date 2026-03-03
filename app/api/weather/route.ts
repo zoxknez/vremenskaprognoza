@@ -6,14 +6,43 @@ import { BALKAN_COUNTRIES } from '@/lib/api/balkan-countries';
 import { getApiKey } from '@/lib/config/env';
 import { handleAPIError, createErrorResponse } from '@/lib/utils/api-error';
 import { findNearestStation, MAX_STATION_DISTANCE_KM } from '@/lib/config/stations';
+import { enforceRateLimit, requireSameOrigin } from '@/lib/utils/request-security';
 
 const OPENWEATHER_API_KEY = getApiKey('openweather');
 
 export async function GET(request: NextRequest) {
+  const sameOriginError = requireSameOrigin(request);
+  if (sameOriginError) {
+    return sameOriginError;
+  }
+
+  const rateLimitError = await enforceRateLimit(request, {
+    prefix: 'api:weather',
+    limit: 120,
+    windowMs: 60 * 1000,
+  });
+  if (rateLimitError) {
+    return rateLimitError;
+  }
+
   const searchParams = request.nextUrl.searchParams;
   const city = searchParams.get('city');
   let lat = searchParams.get('lat');
   let lon = searchParams.get('lon');
+
+  if (city && city.length > 120) {
+    return NextResponse.json(
+      { error: 'City parameter is too long' },
+      { status: 400 }
+    );
+  }
+
+  if (!OPENWEATHER_API_KEY) {
+    return NextResponse.json(
+      { error: 'OpenWeather API key not configured' },
+      { status: 503 }
+    );
+  }
 
   // If city is provided but no coordinates, try to find them
   if (city && (!lat || !lon)) {
@@ -85,7 +114,6 @@ export async function GET(request: NextRequest) {
       let hasRealAQIData = false;
       if (aqiResponse.ok) {
         aqiData = await aqiResponse.json();
-        const components = aqiData?.list?.[0]?.components;
 
         // OpenWeather Air Pollution API vraća INTERPOLIRANE podatke čak i za mesta bez stanica!
         // ODBACUJEMO SVE interpolirane podatke - prikazujemo SAMO podatke sa pravih mernih stanica
@@ -162,6 +190,7 @@ export async function GET(request: NextRequest) {
         humidity: data.main?.humidity,
         pressure: data.main?.pressure,
         windSpeed: data.wind?.speed,
+        windDeg: data.wind?.deg || 0,
         visibility: data.visibility,
         description: translateWeatherDescription(data.weather?.[0]?.description || 'Nije dostupno'),
         icon: data.weather?.[0]?.icon || '04d',

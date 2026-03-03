@@ -1,6 +1,6 @@
 import { AirQualityData, AirQualitySource } from '@/lib/types/air-quality';
 import { calculateAQI } from '@/lib/types/air-quality';
-import { BALKAN_COUNTRIES, getAllBalkanCities, BalkanCountryCode } from './balkan-countries';
+import { getAllBalkanCities } from './balkan-countries';
 
 // OpenWeatherMap Air Pollution API
 // Free tier: 1000 calls/day
@@ -75,7 +75,7 @@ export async function fetchOpenWeatherBalkanData(): Promise<AirQualityData[]> {
           };
         }
         return null;
-      } catch (error) {
+      } catch {
         return null;
       }
     });
